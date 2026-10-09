@@ -32,6 +32,11 @@ the game, and it never leaves your computer.
 - Clearing your browser's site data for the page removes the unpacked game
   and your saves (download the saves first).
 
+## Support
+
+If you're enjoying SimGolf again, you can
+[buy me a coffee](https://donate.stripe.com/eVq6oG1U46TL3ut28h9R600). Thank you!
+
 ## How it works
 
 The game isn't emulated. Its code was decompiled with Ghidra and translated
