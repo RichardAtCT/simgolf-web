@@ -61,6 +61,12 @@
         "FUN_0049cf50(iVar1)",
         "FUN_0049cf50(param_1,iVar1)"
       ]
+    ],
+    "FUN_00470a60": [
+      [
+        "uVar21 = ((byte)~bVar6 | 6) << 1;",
+        "uVar21 = ((byte)~bVar6 & 1 | 6) << 1;"
+      ]
     ]
   },
   "class_libs": [
