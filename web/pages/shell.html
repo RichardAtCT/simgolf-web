@@ -121,7 +121,7 @@
       <h1>SimGolf</h1>
     </div>
     <p class="tag">The 2002 classic, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
-    <div class="count" id="count">⛳ <b id="count-n"></b> rounds teed off in the browser so far</div>
+    <div class="count" id="count">⛳ <b id="count-n"></b> <span id="count-w">rounds</span> teed off in the browser so far</div>
     <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
     <ol class="steps">
@@ -156,6 +156,7 @@
     var show = function (j) {
       if (!j || typeof j.value !== 'number' || j.value < 1) return;
       document.getElementById('count-n').textContent = j.value.toLocaleString();
+      document.getElementById('count-w').textContent = j.value === 1 ? 'round' : 'rounds';
       document.getElementById('count').style.display = 'block';
     };
     fetch(C + '/get' + KEY).then(function (r) { return r.ok ? r.json() : null; }).then(show).catch(function () {});
