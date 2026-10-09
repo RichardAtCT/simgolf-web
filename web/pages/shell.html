@@ -11,31 +11,94 @@
 <meta property="og:image" content="https://richardatct.github.io/simgolf-web/og.png">
 <meta property="og:url" content="https://richardatct.github.io/simgolf-web/">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg: #0f1a12; --panel: #17261b; --ink: #e9efe6; --dim: #9fb3a2; --accent: #8fd16a; --bad: #ff8a7a; --line: #2c4332; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  /* Styled after the game's own menus: periwinkle golf-ball dimples, cream
+     ovals with violet rims and round badges, the yellow "selected" oval, and
+     the wooden info panel from the course view. Seed colours 7e3b19c4a2:
+     #7e3b19 wood, #3b19c4 violet, #19c4a2 fairway teal. */
+  :root {
+    --wood: #7e3b19; --wood-dark: #5a2810; --violet: #3b19c4; --violet-deep: #241078;
+    --teal: #19c4a2; --cream: #fbf8e4; --cream-edge: #e6dfb8; --lav: #c3c0ef; --lav-deep: #8f89d9;
+    --ink: #2a2154; --green: #1f9a3a; --green-dark: #0d5c22; --yellow: #ffd81a; --bad: #b3261e;
+  }
+  html, body { margin: 0; height: 100%; background: #16122e; color: var(--ink); font: 500 16px/1.5 Nunito, system-ui, sans-serif; }
   body { display: flex; align-items: center; justify-content: center; }
   canvas { width: min(100vw, calc(100vh * 4 / 3)); aspect-ratio: 4 / 3; image-rendering: pixelated; }
-  #setup { position: fixed; inset: 0; z-index: 2147483000; overflow: auto; display: none; background: var(--bg); padding: 32px 16px; box-sizing: border-box; }
+  #setup {
+    position: fixed; inset: 0; z-index: 2147483000; overflow: auto; display: none; box-sizing: border-box; padding: 28px 16px 40px;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,.35) 0 3px, transparent 4px) 0 0 / 22px 22px,
+      radial-gradient(circle at 50% 50%, rgba(60,40,150,.10) 0 6px, transparent 7px) 11px 11px / 22px 22px,
+      linear-gradient(160deg, #d9d7f7 0%, var(--lav) 45%, #a8a3e6 100%);
+  }
   #setup.on { display: block; }
-  .card { max-width: 640px; margin: 0 auto; }
-  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .sub { color: var(--dim); margin: 0 0 24px; }
-  ol { padding-left: 22px; margin: 0 0 20px; }
-  li { margin: 0 0 10px; }
-  a { color: var(--accent); }
-  code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size: 14px; }
-  #drop { display: block; border: 2px dashed var(--line); border-radius: 12px; padding: 28px 16px; text-align: center; background: var(--panel); cursor: pointer; transition: border-color .15s; }
-  #drop:hover, #drop.over { border-color: var(--accent); }
-  #drop strong { display: block; font-size: 18px; margin-bottom: 4px; }
-  #drop span { color: var(--dim); font-size: 14px; }
-  #drop input { display: none; }
-  #bar { height: 8px; background: var(--panel); border-radius: 4px; overflow: hidden; margin: 18px 0 6px; display: none; }
-  #bar div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-  #msg { min-height: 24px; color: var(--dim); font-size: 14px; overflow-wrap: anywhere; }
+  .card { max-width: 680px; margin: 0 auto; position: relative; }
+  .ball { position: absolute; left: 50%; top: -60px; width: 460px; height: 460px; margin-left: -230px; border-radius: 50%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255,255,255,.28) 0 5px, transparent 6px) 0 0 / 26px 26px,
+      radial-gradient(circle at 35% 30%, #b9b5f2, var(--lav-deep) 60%, #6a63c4);
+    box-shadow: inset -18px -24px 40px rgba(36,16,120,.35), 0 10px 30px rgba(36,16,120,.25); }
+  .card > *:not(.ball) { position: relative; z-index: 1; }
+
+  .logo { margin: 70px auto 10px; max-width: 560px; text-align: center; padding: 26px 24px 22px; border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 35%, #fffef3, var(--cream) 60%, var(--cream-edge));
+    border: 4px solid var(--violet-deep); box-shadow: 0 0 0 3px #fff inset, 0 8px 0 rgba(36,16,120,.35); }
+  .logo small { display: block; font: 800 22px/1 "Baloo 2", sans-serif; color: var(--green-dark); letter-spacing: .01em; }
+  .logo h1 { margin: 2px 0 0; font: 800 clamp(48px, 11vw, 84px)/0.95 "Baloo 2", sans-serif; letter-spacing: -.01em; color: var(--green);
+    -webkit-text-stroke: 3px #fff; paint-order: stroke fill; text-shadow: 0 4px 0 var(--green-dark), 0 6px 10px rgba(13,92,34,.35); }
+  .tag { text-align: center; margin: 14px auto 26px; max-width: 520px; font-weight: 700; color: var(--violet-deep); }
+
+  .steps { list-style: none; padding: 0; margin: 0 0 22px; counter-reset: step; }
+  .steps li { counter-increment: step; position: relative; margin: 0 0 14px; padding: 14px 22px 14px 74px; border-radius: 40px;
+    background: linear-gradient(#fffdf0, var(--cream)); border: 3px solid var(--violet-deep); box-shadow: 0 4px 0 rgba(36,16,120,.35); }
+  .steps li::before { content: counter(step); position: absolute; left: 10px; top: 50%; width: 48px; height: 48px; margin-top: -24px; border-radius: 50%;
+    display: grid; place-items: center; font: 800 24px/1 "Baloo 2", sans-serif; color: #fff;
+    background: radial-gradient(circle at 35% 30%, #8d7ff0, var(--violet) 55%, var(--violet-deep)); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--violet-deep), 0 3px 0 rgba(36,16,120,.4); }
+  a { color: var(--violet); font-weight: 800; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+  a:hover { color: #0f8f75; }
+  code { font: 700 13px/1 ui-monospace, Menlo, monospace; background: #ece6c4; color: var(--wood-dark); padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+
+  #drop { display: flex; align-items: center; gap: 18px; padding: 18px 28px 18px 18px; border-radius: 60px; cursor: pointer;
+    background: linear-gradient(#fff27a, var(--yellow) 55%, #f2b800); border: 3px solid var(--violet-deep);
+    box-shadow: 0 0 0 3px #fff inset, 0 6px 0 rgba(36,16,120,.4); transition: transform .12s, box-shadow .12s; }
+  #drop:hover, #drop.over { transform: translateY(-2px); box-shadow: 0 0 0 3px #fff inset, 0 8px 0 rgba(36,16,120,.4); }
+  #drop:active { transform: translateY(2px); box-shadow: 0 0 0 3px #fff inset, 0 3px 0 rgba(36,16,120,.4); }
+  #drop:focus-within { outline: 3px solid var(--teal); outline-offset: 3px; }
+  #drop .tee { flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ffe66b, #e8a500 70%); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--violet-deep); }
+  #drop strong { display: block; font: 800 24px/1.1 "Baloo 2", sans-serif; color: var(--violet-deep); }
+  #drop span { font-weight: 700; font-size: 14px; color: #5b4a00; }
+  #drop input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+  #bar { height: 16px; margin: 20px 6px 8px; display: none; border-radius: 10px; overflow: hidden; background: var(--cream); border: 3px solid var(--violet-deep); }
+  #bar div { height: 100%; width: 0; transition: width .2s; background: repeating-linear-gradient(135deg, var(--teal) 0 12px, #12a387 12px 24px); }
+  #msg { min-height: 24px; margin: 6px 8px 0; font-weight: 700; font-size: 14px; color: var(--violet-deep); overflow-wrap: anywhere; }
   #msg.bad { color: var(--bad); }
-  .note { color: var(--dim); font-size: 14px; border-top: 1px solid var(--line); margin-top: 24px; padding-top: 14px; }
-  .warn, #unsupported { display: none; background: #3a1d19; border: 1px solid #6b2f27; border-radius: 10px; padding: 12px 14px; margin: 0 0 20px; }
+
+  .warn, #unsupported { display: none; margin: 0 0 18px; padding: 12px 20px; border-radius: 28px; font-weight: 700;
+    background: #ffe3dc; color: #7a1a12; border: 3px solid #b3261e; box-shadow: 0 4px 0 rgba(122,26,18,.3); }
+
+  .wood { margin-top: 28px; padding: 16px 22px; border-radius: 18px; color: #fbeedd; font-size: 14px;
+    background: repeating-linear-gradient(178deg, rgba(255,255,255,.04) 0 3px, transparent 3px 9px), linear-gradient(var(--wood), var(--wood-dark));
+    border: 3px solid #3a1806; box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 5px 0 rgba(58,24,6,.35); }
+  .wood p { margin: 0 0 8px; } .wood p:last-child { margin: 0; }
+  .wood strong { color: #fff; }
+  .wood a { color: #9ff0de; }
+  .wood a:hover { color: #fff; }
+
+  @media (max-width: 560px) {
+    .ball { width: 340px; height: 340px; margin-left: -170px; top: -40px; }
+    .logo { margin-top: 40px; border-radius: 120px / 70px; padding: 20px 14px 18px; }
+    .logo small { font-size: 18px; }
+    .steps li { border-radius: 26px; padding: 12px 16px 12px 66px; }
+    .steps li::before { width: 42px; height: 42px; margin-top: -21px; font-size: 21px; }
+    #drop { border-radius: 36px; padding: 14px 18px 14px 14px; }
+    #drop .tee { width: 52px; height: 52px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #drop, #bar div { transition: none; } }
 </style>
 </head>
 <body>
@@ -43,24 +106,30 @@
 
 <div id="setup">
   <div class="card">
-    <h1>Sid Meier's SimGolf</h1>
-    <p class="sub">The 2002 game, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
+    <div class="ball" aria-hidden="true"></div>
+    <div class="logo">
+      <small>Sid Meier's</small>
+      <h1>SimGolf</h1>
+    </div>
+    <p class="tag">The 2002 classic, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
     <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
-    <ol>
+    <ol class="steps">
       <li>Download the <strong>game disc</strong> from the <a href="https://archive.org/details/sid-meiers-sim-golf-1641547" target="_blank" rel="noopener">Internet Archive</a> (the <code>.7z</code> file, about 250 MB). An <code>.iso</code> of the disc from elsewhere works too.</li>
       <li>Get the <strong>v1.02 no-CD <code>golf.exe</code></strong>, usually a zip called <code>SIMGOLF.102.ENG.MYTH.NOCD.ZIP</code>, from an abandonware site such as <a href="https://www.myabandonware.com/search/q/simgolf" target="_blank" rel="noopener">MyAbandonware</a>.</li>
       <li>Choose both files below, just as they downloaded; no need to unzip anything. The page unpacks the game in about a minute and keeps it in this browser, so you only do this once.</li>
     </ol>
     <label id="drop">
-      <strong>Choose your game files</strong>
-      <span>or drop them here</span>
+      <span class="tee" aria-hidden="true"><svg width="34" height="40" viewBox="0 0 34 40"><circle cx="17" cy="14" r="12" fill="#fff" stroke="#241078" stroke-width="2.5"/><g fill="#c3c0ef"><circle cx="12" cy="10" r="1.8"/><circle cx="18" cy="8" r="1.8"/><circle cx="23" cy="12" r="1.8"/><circle cx="14" cy="16" r="1.8"/><circle cx="20" cy="17" r="1.8"/></g><path d="M11 27h12l-4 5v7h-4v-7z" fill="#7e3b19" stroke="#241078" stroke-width="2" stroke-linejoin="round"/></svg></span>
+      <span><strong>Choose your game files</strong><span>or drop them here</span></span>
       <input id="pick" type="file" multiple>
     </label>
     <div id="bar"><div></div></div>
-    <div id="msg"></div>
-    <p class="note">The game's intro and closing videos aren't played in this version. Saves stay in this browser; use <strong>Ctrl+F8</strong> in the game to download or import them. To start over with different files, use the button at the bottom of that panel.</p>
-    <p class="note">An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
+    <div id="msg" role="status"></div>
+    <div class="wood">
+      <p>The intro and closing videos aren't played in this version. Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, or to start over with different game files.</p>
+      <p>An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
+    </div>
   </div>
 </div>
 
