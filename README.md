@@ -15,8 +15,8 @@ the game, and it never leaves your computer.
      [Internet Archive](https://archive.org/details/sid-meiers-sim-golf-1641547)
      (about 250 MB; an `.iso` of the disc from elsewhere works too), and
    - the **v1.02 no-CD `golf.exe`**, usually a zip called
-     `SIMGOLF.102.ENG.MYTH.NOCD.ZIP`, from an abandonware site such as
-     [MyAbandonware](https://www.myabandonware.com/search/q/simgolf).
+     `SIMGOLF.102.ENG.MYTH.NOCD.ZIP`, from
+     [Abandonware DOS](https://www.abandonwaredos.com/abandonware-game.php?abandonware=Sid+Meier%27s+SimGolf&gid=2317).
 2. Open the page in **Chrome or Edge, version 137 or newer**, on a desktop or
    laptop. (Firefox and Safari can't run it yet.)
 3. Click **Choose your game files** and pick both files as they downloaded;
