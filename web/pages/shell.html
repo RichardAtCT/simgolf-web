@@ -67,6 +67,17 @@
   #drop:hover, #drop.over { transform: translateY(-2px); box-shadow: 0 0 0 3px #fff inset, 0 8px 0 rgba(36,16,120,.4); }
   #drop:active { transform: translateY(2px); box-shadow: 0 0 0 3px #fff inset, 0 3px 0 rgba(36,16,120,.4); }
   #drop:focus-within { outline: 3px solid var(--teal); outline-offset: 3px; }
+  .playbtn { width: 100%; font: inherit; text-align: left; display: flex; align-items: center; gap: 18px; padding: 22px 32px 22px 20px; border-radius: 70px; cursor: pointer;
+    background: linear-gradient(#fff27a, var(--yellow) 55%, #f2b800); border: 3px solid var(--violet-deep);
+    box-shadow: 0 0 0 3px #fff inset, 0 6px 0 rgba(36,16,120,.4); transition: transform .12s, box-shadow .12s; }
+  .playbtn:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px #fff inset, 0 8px 0 rgba(36,16,120,.4); }
+  .playbtn:active { transform: translateY(2px); box-shadow: 0 0 0 3px #fff inset, 0 3px 0 rgba(36,16,120,.4); }
+  .playbtn:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+  .playbtn .tee { flex: none; width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ffe66b, #e8a500 70%); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--violet-deep); }
+  .playbtn strong { display: block; font: 800 40px/1 "Baloo 2", sans-serif; color: var(--violet-deep); }
+  .playbtn span span { font-weight: 700; font-size: 15px; color: #5b4a00; }
+  .again { text-align: center; margin: 14px 0 0; font-size: 14px; }
   #drop .tee { flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
     background: radial-gradient(circle at 35% 30%, #ffe66b, #e8a500 70%); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--violet-deep); }
   #drop strong { display: block; font: 800 24px/1.1 "Baloo 2", sans-serif; color: var(--violet-deep); }
@@ -105,7 +116,18 @@
     .steps li { border-radius: 26px; padding: 12px 16px 12px 66px; }
     .steps li::before { width: 42px; height: 42px; margin-top: -21px; font-size: 21px; }
     #drop { border-radius: 36px; padding: 14px 18px 14px 14px; }
-    #drop .tee { width: 52px; height: 52px; }
+    .playbtn { width: 100%; font: inherit; text-align: left; display: flex; align-items: center; gap: 18px; padding: 22px 32px 22px 20px; border-radius: 70px; cursor: pointer;
+    background: linear-gradient(#fff27a, var(--yellow) 55%, #f2b800); border: 3px solid var(--violet-deep);
+    box-shadow: 0 0 0 3px #fff inset, 0 6px 0 rgba(36,16,120,.4); transition: transform .12s, box-shadow .12s; }
+  .playbtn:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px #fff inset, 0 8px 0 rgba(36,16,120,.4); }
+  .playbtn:active { transform: translateY(2px); box-shadow: 0 0 0 3px #fff inset, 0 3px 0 rgba(36,16,120,.4); }
+  .playbtn:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+  .playbtn .tee { flex: none; width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ffe66b, #e8a500 70%); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--violet-deep); }
+  .playbtn strong { display: block; font: 800 40px/1 "Baloo 2", sans-serif; color: var(--violet-deep); }
+  .playbtn span span { font-weight: 700; font-size: 15px; color: #5b4a00; }
+  .again { text-align: center; margin: 14px 0 0; font-size: 14px; }
+  #drop .tee { width: 52px; height: 52px; }
   }
   @media (prefers-reduced-motion: reduce) { #drop, #bar div { transition: none; } }
 </style>
@@ -124,6 +146,14 @@
     <div class="count" id="count">⛳ <b id="count-n"></b> <span id="count-w">rounds</span> teed off in the browser so far</div>
     <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
+    <div id="ready" hidden>
+      <button type="button" id="play" class="playbtn">
+        <span class="tee" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M9 5l17 10-17 10z" fill="#241078" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg></span>
+        <span><strong>Play</strong><span>Your game files are ready in this browser</span></span>
+      </button>
+      <p class="again"><a href="#" id="again">Use different game files</a></p>
+    </div>
+    <div id="install">
     <ol class="steps">
       <li>Download the <strong>game disc</strong> from the <a href="https://archive.org/details/sid-meiers-sim-golf-1641547" target="_blank" rel="noopener">Internet Archive</a> (the <code>.7z</code> file, about 250 MB). An <code>.iso</code> of the disc from elsewhere works too.</li>
       <li>Get the <strong>v1.02 no-CD <code>golf.exe</code></strong>, usually a zip called <code>SIMGOLF.102.ENG.MYTH.NOCD.ZIP</code>, from <a href="https://www.abandonwaredos.com/abandonware-game.php?abandonware=Sid+Meier%27s+SimGolf&amp;gid=2317" target="_blank" rel="noopener">Abandonware DOS</a>.</li>
@@ -136,6 +166,7 @@
     </label>
     <div id="bar"><div></div></div>
     <div id="msg" role="status"></div>
+    </div>
     <a class="coffee" href="https://donate.stripe.com/eVq6oG1U46TL3ut28h9R600" target="_blank" rel="noopener"><span class="cup" aria-hidden="true">☕</span><span>Buy me a coffee<small>Enjoying SimGolf again? Chip in to keep the port going.</small></span></a>
     <div class="wood">
       <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, report a problem, or start over with different game files.</p>
@@ -164,6 +195,7 @@
     var prevInit = Module.onRuntimeInitialized;
     Module.onRuntimeInitialized = function () {
       if (prevInit) prevInit();
+      if (!/\.github\.io$/.test(location.hostname)) return;   // local test runs don't count
       try { if (sessionStorage.getItem('simgolf-counted')) return; sessionStorage.setItem('simgolf-counted', '1'); } catch (e) {}
       fetch(C + '/hit' + KEY).catch(function () {});
     };
@@ -258,7 +290,29 @@
       });
     }
 
+    // Already installed: the landing page with a Play button instead of the steps.
+    function askPlay() {
+      setup.classList.add('on');
+      document.getElementById('install').hidden = true;
+      document.getElementById('ready').hidden = false;
+      var mobile = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+      if (mobile) document.getElementById('mobile').style.display = 'block';
+      else if (!supported) document.getElementById('unsupported').style.display = 'block';
+      if (mobile || !supported) { document.getElementById('play').hidden = true; return new Promise(function () {}); }
+      document.getElementById('again').onclick = function (e) {
+        e.preventDefault();
+        if (confirm('Remove the unpacked game files from this browser and choose them again? Your saves are kept.')) location.search = '?reset';
+      };
+      return new Promise(function (resolve) {
+        var b = document.getElementById('play');
+        b.onclick = function () { b.disabled = true; b.querySelector('strong').textContent = 'Loading…'; resolve(); };
+        setTimeout(function () { b.focus(); }, 0);
+      });
+    }
+
     async function ask() {
+      document.getElementById('install').hidden = false;
+      document.getElementById('ready').hidden = true;
       setup.classList.add('on');
       var mobile = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
       if (mobile) document.getElementById('mobile').style.display = 'block';
@@ -287,6 +341,7 @@
       }
       var info = await installed();
       if (!info) { await ask(); info = await installed(); }
+      else await askPlay();
       setup.classList.remove('on');
       try { navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
       var top = await window.simgolfStorage();

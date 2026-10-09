@@ -31,6 +31,10 @@ if (files.length) {
   }
   console.log(`installed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
+if (!files.length) {   // already installed: the landing page shows Play
+  await page.waitForSelector('#play', { state: 'visible', timeout: 10000 });
+  await page.click('#play');
+}
 await page.waitForTimeout((+opt.wait || 40) * 1000);
 // --clicks="x,y;d:x,y" (page pixels, d: double-click), 8 s apart, then a final screenshot
 for (const c of (opt.clicks || '').split(';').filter(Boolean)) {
