@@ -228,6 +228,112 @@ async function un7z(file, scratch) {
   return out;
 }
 
+// ---------- videos (Bink -> WebM) ----------
+
+// Decodes with FFmpeg's Bink decoder (bink.wasm, src/install/bink_wasm.c),
+// encodes VP8 + Opus with WebCodecs and muxes with webm-muxer.
+async function binkToWebm(data, onProgress) {
+  if (typeof VideoEncoder === 'undefined' || typeof AudioEncoder === 'undefined') throw new Error('no WebCodecs');
+  if (!self.createBink) importScripts('bink.js', 'webm-muxer.js');
+  const bk = await createBink({ locateFile: (p) => p, print: () => {}, printErr: () => {} });
+  bk.FS.writeFile('/v.bik', data);
+  const call = (n, r = 'number', a = [], v = []) => bk.ccall(n, r, a, v);
+  if (!call('bk_open', 'number', ['string'], ['/v.bik'])) throw new Error("can't open");
+  const w = call('bk_width'), h = call('bk_height'), fps = call('bk_fps') || 15;
+  const rate = call('bk_sample_rate'), chans = call('bk_channels');
+  const layout = call('bk_audio_layout');   // 1 planar float, 2 interleaved float
+  const audio = rate > 0 && chans > 0 && layout > 0;
+  const OUT_RATE = 48000;   // Opus
+
+  const target = new WebMMuxer.ArrayBufferTarget();
+  const muxer = new WebMMuxer.Muxer({
+    target,
+    video: { codec: 'V_VP8', width: w, height: h, frameRate: fps },
+    audio: audio ? { codec: 'A_OPUS', sampleRate: OUT_RATE, numberOfChannels: chans } : undefined,
+  });
+  let failed = null;
+  const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: (e) => { failed = e; } });
+  venc.configure({ codec: 'vp8', width: w, height: h, bitrate: 2500000, framerate: fps });
+  let aenc = null;
+  if (audio) {
+    aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: (e) => { failed = e; } });
+    aenc.configure({ codec: 'opus', sampleRate: OUT_RATE, numberOfChannels: chans, bitrate: 128000 });
+  }
+
+  // Audio arrives at the disc's rate; it's collected, resampled to 48 kHz
+  // (linear) and encoded at the end.
+  const pcm = Array.from({ length: chans }, () => []);
+  let pcmLen = 0;
+  const yuv = new Uint8Array(w * h * 3 / 2);
+  const frameUs = 1e6 / fps;
+  let nFrames = 0;
+  for (;;) {
+    if (failed) throw failed;
+    const k = call('bk_next');
+    if (k <= 0) break;
+    if (k === 1) {
+      const heap = bk.HEAPU8;
+      let o = 0;
+      for (let p = 0; p < 3; p++) {
+        const pw = p ? w >> 1 : w, ph = p ? h >> 1 : h;
+        const base = call('bk_plane', 'number', ['number'], [p]), ls = call('bk_linesize', 'number', ['number'], [p]);
+        for (let y = 0; y < ph; y++, o += pw) yuv.set(heap.subarray(base + y * ls, base + y * ls + pw), o);
+      }
+      const f = new VideoFrame(yuv, { format: 'I420', codedWidth: w, codedHeight: h, timestamp: Math.round(nFrames * frameUs), duration: Math.round(frameUs) });
+      venc.encode(f, { keyFrame: nFrames % (fps * 4) === 0 });
+      f.close();
+      nFrames++;
+      while (venc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 2));
+      if (nFrames % 15 === 0) onProgress(Math.min(0.9, nFrames / (fps * 60)));
+    } else if (k === 2) {
+      const n = call('bk_nb_samples');
+      if (layout === 1) {
+        for (let ch = 0; ch < chans; ch++) {
+          const ptr = call('bk_samples', 'number', ['number'], [ch]) >> 2;
+          pcm[ch].push(bk.HEAPF32.slice(ptr, ptr + n));
+        }
+      } else if (layout === 2) {
+        const ptr = call('bk_samples', 'number', ['number'], [0]) >> 2, src = bk.HEAPF32;
+        for (let ch = 0; ch < chans; ch++) {
+          const a = new Float32Array(n);
+          for (let i = 0; i < n; i++) a[i] = src[ptr + i * chans + ch];
+          pcm[ch].push(a);
+        }
+      }
+      pcmLen += n;
+    }
+  }
+  call('bk_close', null);
+  await venc.flush();
+
+  if (aenc && pcmLen) {
+    const joined = pcm.map((parts) => { const a = new Float32Array(pcmLen); let o = 0; for (const p of parts) { a.set(p, o); o += p.length; } return a; });
+    const outLen = Math.floor(pcmLen * OUT_RATE / rate);
+    const CHUNK = 4800;
+    for (let start = 0; start < outLen; start += CHUNK) {
+      const n = Math.min(CHUNK, outLen - start);
+      const planar = new Float32Array(n * chans);
+      for (let ch = 0; ch < chans; ch++) {
+        const src = joined[ch];
+        for (let i = 0; i < n; i++) {
+          const x = (start + i) * rate / OUT_RATE, i0 = Math.floor(x), t = x - i0;
+          const a = src[i0] || 0, b = src[Math.min(i0 + 1, pcmLen - 1)] || 0;
+          planar[ch * n + i] = a + (b - a) * t;
+        }
+      }
+      const ad = new AudioData({ format: 'f32-planar', sampleRate: OUT_RATE, numberOfFrames: n, numberOfChannels: chans, timestamp: Math.round(start * 1e6 / OUT_RATE), data: planar });
+      aenc.encode(ad);
+      ad.close();
+      while (aenc.encodeQueueSize > 16) await new Promise((r) => setTimeout(r, 2));
+    }
+    await aenc.flush();
+  }
+  if (failed) throw failed;
+  muxer.finalize();
+  onProgress(1);
+  return new Uint8Array(target.buffer);
+}
+
 function missing(text) { const e = new Error(text); e.missing = true; return e; }
 
 // Accepts the disc image (.iso/.bin/.img/.mdf), golf.exe, the no-CD zip, or a
@@ -297,6 +403,7 @@ async function install(files) {
   const cache = new Map();
   const files_ = [];
   let jgld = null;
+  const biks = [];
   const total = last - first + 1;
   for (let i = first; i <= last; i++) {
     if (!c('us_valid', 'number', ['number'], [i])) continue;
@@ -307,9 +414,10 @@ async function install(files) {
     const data = us.FS.readFile('/tmp/f');
     us.FS.unlink('/tmp/f');
     if (/^jgld\.dll$/i.test(rel)) jgld = data;
+    if (/\.bik$/i.test(rel)) biks.push([rel, data]);
     await writeFile(top, 'game/' + rel, data, cache);
     files_.push([rel, data.length]);
-    if ((i - first) % 25 === 0) progress(0.05 + 0.9 * (i - first) / total, 'Unpacking ' + rel);
+    if ((i - first) % 25 === 0) progress(0.05 + 0.75 * (i - first) / total, 'Unpacking ' + rel);
   }
   for (const e of rootEntries) {
     if (e.dir || !ROOT_EXTRA.test(e.name)) continue;
@@ -318,6 +426,22 @@ async function install(files) {
     files_.push([e.name, data.length]);
   }
   if (!jgld) throw new Error("jgld.dll wasn't in the installer; is this the right disc?");
+
+  // The intro and closing videos: Bink on the disc, WebM for the game's
+  // <video> player (src/port/video.c looks for X.webm next to X.bik).
+  // Optional: if this browser can't encode them, the game skips the videos.
+  for (let v = 0; v < biks.length; v++) {
+    const [rel, data] = biks[v];
+    const label = /intro/i.test(rel) ? 'the intro video' : /clos/i.test(rel) ? 'the closing video' : rel;
+    try {
+      const webm = await binkToWebm(data, (f) => progress(0.8 + 0.15 * (v + f) / biks.length, 'Converting ' + label + '…'));
+      const out = rel.replace(/\.bik$/i, '.webm');
+      await writeFile(top, 'game/' + out, webm, cache);
+      files_.push([out, webm.length]);
+    } catch (e) {
+      console.warn('video ' + rel + ': ' + (e && e.message || e));
+    }
+  }
 
   progress(0.96, 'Preparing the game code…');
   await writeFile(top, 'image/golf.bin', mapPE(exe), cache);

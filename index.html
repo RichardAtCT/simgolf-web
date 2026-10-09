@@ -127,14 +127,14 @@
     <div id="bar"><div></div></div>
     <div id="msg" role="status"></div>
     <div class="wood">
-      <p>The intro and closing videos aren't played in this version. Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, or to start over with different game files.</p>
+      <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, or to start over with different game files.</p>
       <p>An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
     </div>
   </div>
 </div>
 
 <script>
-  var Module = { canvas: document.getElementById('canvas'), noVideos: true, quiet: true };
+  var Module = { canvas: document.getElementById('canvas'), noVideos: false, quiet: true };
 
   // "Start over" in the Saves panel (Ctrl+F8): forget the unpacked game files
   // (saves are kept) and go back to the setup screen.
