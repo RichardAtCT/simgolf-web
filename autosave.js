@@ -87,6 +87,7 @@
   function record(rel, data) {
     var name = rel.split('/').pop();
     if (!/\.sve$/i.test(name) || SKIP.test(name) || data.length < 1024) return;
+    toast(/^&autosave/i.test(name) ? 'Autosaved' : 'Saved');
     var bytes = data.slice(), h = hash(bytes);
     queue = queue.then(function () {
       return list().then(function (snaps) {
@@ -96,6 +97,22 @@
           .then(list).then(prune);
       });
     }).then(refresh).catch(function (e) { console.warn('autosave: ' + e); });
+  }
+
+  // A short notice each time the game writes a save, so players can see
+  // autosave working (it only comes after ~45 s of unpaused play).
+  var toastEl = null, toastTimer = 0;
+  function toast(text) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'sv-toast';
+      toastEl.setAttribute('role', 'status');
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = text + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    toastEl.className = 'on';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.className = ''; }, 2500);
   }
 
   // ---- page hooks
@@ -135,7 +152,11 @@
     'border-radius:3px;padding:2px 7px;cursor:pointer}' +
     '#sv-panel button:hover{background:#3a3a3a}' +
     '#sv-panel .bar{display:flex;gap:6px;margin-bottom:8px}' +
-    '#sv-msg{color:#9d9;margin:6px 0 0;min-height:1em}';
+    '#sv-msg{color:#9d9;margin:6px 0 0;min-height:1em}' +
+    '#sv-toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:1001;pointer-events:none;' +
+    'font:13px system-ui,sans-serif;background:#1b1b1bd9;color:#cfc;border:1px solid #4a4;border-radius:12px;' +
+    'padding:3px 12px;opacity:0;transition:opacity .4s}' +
+    '#sv-toast.on{opacity:1}';
   document.head.appendChild(css);
 
   var btn = document.createElement('button');
