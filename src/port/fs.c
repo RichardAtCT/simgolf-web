@@ -277,6 +277,11 @@ void fs_init(void) {
     snprintf(abs, sizeof abs, FS_GAME_ROOT "/%s", g_entries[i].path);
     mkdirs(abs);
   }
+  // The game writes into these but never creates them; the retail installer
+  // does. Without "Saved Games" every save and autosave fails, which is the
+  // case for the Pages build (its install holds files only).
+  mkdir(FS_GAME_ROOT "/Saved Games", 0777);
+  mkdir(FS_GAME_ROOT "/Snapshots", 0777);
   chdir(FS_GAME_ROOT);
   fprintf(stderr, "fs: %d game files in manifest\n", g_count);
   int saved = js_persist_load();
