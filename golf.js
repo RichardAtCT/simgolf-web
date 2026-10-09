@@ -76,7 +76,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpicj8yol8.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp_0ji2x9x.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,21 +204,21 @@ Module['FS_createPath']("/", "fonts", true, true);
 
   })();
 
-// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpicj8yol8.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpui1sauk_.js
+// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp_0ji2x9x.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpp8n5nnsk.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpui1sauk_.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp8410p4iq.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpp8n5nnsk.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp2rnexp7s.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp8410p4iq.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp2rnexp7s.js
 
 
 var programArgs = [];
@@ -10524,7 +10524,7 @@ function js_api_trace_enabled() { return Module.apiTrace ? 1 : 0; }
 js_api_trace_enabled.sig = 'i';
 function __asyncjs__js_wait_frame(ms) { return Asyncify.handleAsync(async () => { if (ms > 0) { await new Promise(r => setTimeout(r, ms)); return; } if (!Module.yieldChannel) { Module.yieldChannel = new MessageChannel(); Module.yieldQueue = []; Module.yieldChannel.port1.onmessage = () => { const r = Module.yieldQueue.shift(); if (r) r(); }; } await new Promise(r => { Module.yieldQueue.push(r); Module.yieldChannel.port2.postMessage(0); }); }); }
 __asyncjs__js_wait_frame.sig = 'vi';
-function __asyncjs__port_play_video(path,background) { return Asyncify.handleAsync(async () => { const name = UTF8ToString(path); let data; try { data = FS.readFile(name); } catch (e) { err('video: cannot read ' + name); return; } const url = URL.createObjectURL(new Blob([data], { type: 'video/webm' })); const canvas = Module['canvas']; const r = canvas.getBoundingClientRect(); const v = document.createElement('video'); v.src = url; v.playsInline = true; Object.assign(v.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', background: 'black', zIndex: 10, objectFit: 'contain', cursor: 'none', }); document.body.appendChild(v); let onKey; const shown = new Promise((resolve) => { let done = false; const finish = () => { if (!done) { done = true; resolve(); } }; v.addEventListener('ended', finish); v.addEventListener('error', finish); v.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); finish(); }); onKey = (e) => { e.preventDefault(); e.stopPropagation(); finish(); }; addEventListener('keydown', onKey, true); v.play().catch(() => { v.muted = true; v.play().catch(finish); }); }); const gain = (value) => { const s = Module['soundDebug']; if (s && s.master) s.master.gain.value = value; }; const cleanup = () => { removeEventListener('keydown', onKey, true); v.pause(); v.remove(); URL.revokeObjectURL(url); if (background) gain(1); }; if (background) { gain(0); v.addEventListener('timeupdate', () => gain(0)); shown.then(cleanup); return; } await shown; cleanup(); }); }
+function __asyncjs__port_play_video(path,background) { return Asyncify.handleAsync(async () => { const name = UTF8ToString(path); let data; try { data = FS.readFile(name); } catch (e) { err('video: cannot read ' + name); return; } const url = URL.createObjectURL(new Blob([data], { type: 'video/webm' })); const canvas = Module['canvas']; const r = canvas.getBoundingClientRect(); const v = document.createElement('video'); v.src = url; v.playsInline = true; Object.assign(v.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', background: 'black', zIndex: 10, objectFit: 'contain', cursor: 'none', }); document.body.appendChild(v); let onKey; const shown = new Promise((resolve) => { let done = false; const finish = () => { if (!done) { done = true; resolve(); } }; v.addEventListener('ended', finish); v.addEventListener('error', finish); v.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); finish(); }); onKey = (e) => { e.preventDefault(); e.stopPropagation(); finish(); }; addEventListener('keydown', onKey, true); v.play().catch(() => { v.muted = true; v.play().catch(finish); }); }); const gain = (value) => { const s = Module['soundDebug']; if (s && s.master) s.master.gain.value = value; }; let over = false; const cleanup = () => { over = true; removeEventListener('keydown', onKey, true); v.pause(); v.remove(); URL.revokeObjectURL(url); if (background) gain(1); }; if (background) { gain(0); v.addEventListener('timeupdate', () => { if (!over) gain(0); }); shown.then(cleanup); return; } await shown; cleanup(); }); }
 __asyncjs__port_play_video.sig = 'vii';
 function port_no_videos() { return Module['noVideos'] ? 1 : 0; }
 port_no_videos.sig = 'i';
