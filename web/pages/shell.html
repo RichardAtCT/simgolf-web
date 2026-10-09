@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-build="__BUILD__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -127,8 +127,8 @@
     <div id="bar"><div></div></div>
     <div id="msg" role="status"></div>
     <div class="wood">
-      <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, or to start over with different game files.</p>
-      <p>An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
+      <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, report a problem, or start over with different game files.</p>
+      <p>An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a> · <a href="#" onclick="simgolfReport.open(); return false">Report a problem</a>.</p>
     </div>
   </div>
 </div>
@@ -139,8 +139,10 @@
   // "Start over" in the Saves panel (Ctrl+F8): forget the unpacked game files
   // (saves are kept) and go back to the setup screen.
   Module.savePanelFooter = '<div class="bar" style="margin-top:14px;border-top:1px solid #444;padding-top:10px">' +
+    '<button data-a="report">Report a problem…</button> ' +
     '<button data-a="forget">Start over with different game files…</button></div>';
   Module.onSavePanelAction = function (a) {
+    if (a === 'report') { window.simgolfReport.open(); return true; }
     if (a !== 'forget') return false;
     if (confirm('Remove the unpacked game files from this browser and choose them again? Your saves are kept.')) location.search = '?reset';
     return true;
@@ -283,6 +285,7 @@
     }];
   })();
 </script>
+<script src="report.js"></script>
 <script src="autosave.js"></script>
 {{{ SCRIPT }}}
 </body>
