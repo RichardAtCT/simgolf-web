@@ -1,0 +1,7 @@
+# Signatures applied to jgld.dll before CommitSignatures (see golf_sigs.txt).
+1007e8e4 crt_sqrt d 0 double
+1007e9a4 crt_sin d 0 double
+1007ea54 crt_cos d 0 double
+10082960 crt_fabs d 0 double
+1007e6d0 crt_free 1 0 void
+10082a79 crt_pow dd 0 double

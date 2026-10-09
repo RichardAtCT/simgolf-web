@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimGolf in the browser</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #0f1a12; --panel: #17261b; --ink: #e9efe6; --dim: #9fb3a2; --accent: #8fd16a; --bad: #ff8a7a; --line: #2c4332; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { width: min(100vw, calc(100vh * 4 / 3)); aspect-ratio: 4 / 3; image-rendering: pixelated; }
+  #setup { position: fixed; inset: 0; z-index: 2147483000; overflow: auto; display: none; background: var(--bg); padding: 32px 16px; box-sizing: border-box; }
+  #setup.on { display: block; }
+  .card { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--dim); margin: 0 0 24px; }
+  ol { padding-left: 22px; margin: 0 0 20px; }
+  li { margin: 0 0 10px; }
+  a { color: var(--accent); }
+  code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size: 14px; }
+  #drop { display: block; border: 2px dashed var(--line); border-radius: 12px; padding: 28px 16px; text-align: center; background: var(--panel); cursor: pointer; transition: border-color .15s; }
+  #drop:hover, #drop.over { border-color: var(--accent); }
+  #drop strong { display: block; font-size: 18px; margin-bottom: 4px; }
+  #drop span { color: var(--dim); font-size: 14px; }
+  #drop input { display: none; }
+  #bar { height: 8px; background: var(--panel); border-radius: 4px; overflow: hidden; margin: 18px 0 6px; display: none; }
+  #bar div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #msg { min-height: 24px; color: var(--dim); font-size: 14px; overflow-wrap: anywhere; }
+  #msg.bad { color: var(--bad); }
+  .note { color: var(--dim); font-size: 14px; border-top: 1px solid var(--line); margin-top: 24px; padding-top: 14px; }
+  #unsupported { display: none; background: #3a1d19; border: 1px solid #6b2f27; border-radius: 10px; padding: 12px 14px; margin: 0 0 20px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+<div id="setup">
+  <div class="card">
+    <h1>Sid Meier's SimGolf</h1>
+    <p class="sub">The 2002 game, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
+    <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
+    <ol>
+      <li>Download the game. You need the <strong>SimGolf CD image</strong> (<code>.iso</code>) and the <strong>v1.02 no-CD <code>golf.exe</code></strong>. The download on <a href="https://www.myabandonware.com/search/q/simgolf" target="_blank" rel="noopener">MyAbandonware</a> or other abandonware sites usually comes as one zip with both inside.</li>
+      <li>Choose that zip below, or the <code>.iso</code> and the no-CD <code>golf.exe</code> (or its own zip) together.</li>
+      <li>Wait about a minute while the page unpacks the game. It's saved in this browser, so you only do this once.</li>
+    </ol>
+    <label id="drop">
+      <strong>Choose your game files</strong>
+      <span>or drop them here</span>
+      <input id="pick" type="file" multiple>
+    </label>
+    <div id="bar"><div></div></div>
+    <div id="msg"></div>
+    <p class="note">The game's intro and closing videos aren't played in this version. Saves stay in this browser; use <strong>Ctrl+F8</strong> in the game to download or import them. To start over with different files, open this page with <code>?reset</code> on the end of the address.</p>
+    <p class="note">An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
+  </div>
+</div>
+
+<script>
+  var Module = { canvas: document.getElementById('canvas'), noVideos: true };
+
+  // Game files live in the origin private file system (written by
+  // install-worker.js). The game fetches them as game/<path> and its sounds
+  // as assets/<path>; both are answered from there. The dev server's save
+  // sync and crash log endpoints don't exist here.
+  (function () {
+    var realFetch = window.fetch.bind(window);
+    var top = null, dirs = new Map();
+    async function dir(parts) {
+      var d = top, key = '';
+      for (var i = 0; i < parts.length; i++) {
+        key += '/' + parts[i];
+        var next = dirs.get(key);
+        if (!next) { next = await d.getDirectoryHandle(parts[i]); dirs.set(key, next); }
+        d = next;
+      }
+      return d;
+    }
+    async function local(path) {
+      try {
+        var parts = path.split('/').map(decodeURIComponent);
+        var d = await dir(parts.slice(0, -1));
+        var f = await (await d.getFileHandle(parts[parts.length - 1])).getFile();
+        return new Response(f);
+      } catch (e) {
+        return new Response('', { status: 404 });
+      }
+    }
+    window.fetch = function (input, init) {
+      if (typeof input === 'string' && top) {
+        if (input.lastIndexOf('game/', 0) === 0) return local(input);
+        if (input.lastIndexOf('assets/', 0) === 0) return local('game/' + input.slice(7));
+        if (input.lastIndexOf('saves/', 0) === 0) return Promise.resolve(new Response('', { status: 404 }));
+      }
+      return realFetch(input, init);
+    };
+    window.simgolfStorage = async function () {
+      top = await (await navigator.storage.getDirectory()).getDirectoryHandle('simgolf');
+      return top;
+    };
+  })();
+
+  // Setup: if the game isn't installed in this browser yet, ask for the files
+  // and run install-worker.js. Then put the code images, the file list and
+  // the sound list into the game's in-memory file system before it starts.
+  (function () {
+    var setup = document.getElementById('setup'), msg = document.getElementById('msg');
+    var bar = document.getElementById('bar'), fill = bar.firstElementChild;
+    var chosen = [];
+    var supported = typeof WebAssembly.Suspending === 'function' && !!(navigator.storage && navigator.storage.getDirectory);
+
+    async function installed() {
+      try {
+        var top = await window.simgolfStorage();
+        var info = JSON.parse(await (await (await top.getFileHandle('installed.json')).getFile()).text());
+        return info.version === 1 ? info : null;
+      } catch (e) { return null; }
+    }
+
+    function runInstall(files) {
+      return new Promise(function (resolve) {
+        msg.className = ''; msg.textContent = 'Starting…';
+        bar.style.display = 'block'; fill.style.width = '0';
+        var w = new Worker('install-worker.js');
+        w.onmessage = function (ev) {
+          var m = ev.data;
+          if (m.progress != null) { fill.style.width = (m.progress * 100).toFixed(1) + '%'; msg.textContent = m.text; }
+          if (m.error) {
+            w.terminate(); bar.style.display = 'none'; msg.className = 'bad'; msg.textContent = m.error;
+            if (!m.missing) chosen = [];   // a missing half keeps what's chosen so far for the next pick
+          }
+          if (m.done) { w.terminate(); resolve(); }
+        };
+        w.onerror = function (e) { msg.className = 'bad'; msg.textContent = 'Setup failed: ' + (e.message || e); };
+        w.postMessage({ files: Array.from(files) });
+      });
+    }
+
+    async function ask() {
+      setup.classList.add('on');
+      if (!supported) { document.getElementById('unsupported').style.display = 'block'; return new Promise(function () {}); }
+      var drop = document.getElementById('drop'), pick = document.getElementById('pick');
+      return new Promise(function (resolve) {
+        var go = function (files) {
+          if (!files || !files.length) return;
+          Array.from(files).forEach(function (f) {
+            if (!chosen.some(function (c) { return c.name === f.name && c.size === f.size; })) chosen.push(f);
+          });
+          runInstall(chosen).then(resolve);
+        };
+        pick.onchange = function () { go(pick.files); pick.value = ''; };
+        drop.ondragover = function (e) { e.preventDefault(); drop.classList.add('over'); };
+        drop.ondragleave = function () { drop.classList.remove('over'); };
+        drop.ondrop = function (e) { e.preventDefault(); drop.classList.remove('over'); go(e.dataTransfer.files); };
+      });
+    }
+
+    async function prepare() {
+      if (/[?&]reset\b/.test(location.search)) {
+        try { await (await navigator.storage.getDirectory()).removeEntry('simgolf', { recursive: true }); } catch (e) {}
+        history.replaceState(null, '', location.pathname);
+      }
+      var info = await installed();
+      if (!info) { await ask(); info = await installed(); }
+      setup.classList.remove('on');
+      try { navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+      var top = await window.simgolfStorage();
+      var img = await top.getDirectoryHandle('image');
+      var images = {};
+      for (var n of ['golf.bin', 'jgld.bin']) images[n] = new Uint8Array(await (await (await img.getFileHandle(n)).getFile()).arrayBuffer());
+      var skip = /^(docs|ereg)\//i, notData = /\.(exe|dll|lib)$/i;
+      var manifest = info.files.filter(function (f) { return !skip.test(f[0]) && !notData.test(f[0]); })
+        .map(function (f) { return f[0] + '\t' + f[1] + '\n'; }).join('');
+      var sounds = info.files.filter(function (f) { return /\.wav$/i.test(f[0]); }).map(function (f) { return f[0]; }).join('\n') + '\n';
+      return { images: images, manifest: manifest, sounds: sounds };
+    }
+
+    var ready = prepare();
+    Module.preRun = [function () {
+      addRunDependency('simgolf-files');
+      ready.then(function (r) {
+        FS.mkdirTree('/image');
+        FS.writeFile('/image/golf.bin', r.images['golf.bin']);
+        FS.writeFile('/image/jgld.bin', r.images['jgld.bin']);
+        FS.writeFile('/game.manifest', r.manifest);
+        FS.mkdirTree('/assets');
+        FS.writeFile('/assets/sound-files.txt', r.sounds);
+        removeRunDependency('simgolf-files');
+      }, function (e) {
+        msg.className = 'bad'; msg.textContent = 'Could not start: ' + (e && e.message || e);
+        setup.classList.add('on');
+      });
+    }];
+  })();
+</script>
+<script src="autosave.js"></script>
+{{{ SCRIPT }}}
+</body>
+</html>

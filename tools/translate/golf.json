@@ -1,0 +1,69 @@
+{
+  "comment": "golf.exe translation config. native: CRT address -> replacement in src/port/crt.c",
+  "native": {
+    "004a4ffc": "crt_free",
+    "004a5007": "crt_free_",
+    "004a504f": "crt_malloc",
+    "004a57f1": "crt_operator_new",
+    "004a6980": "crt_realloc",
+    "004a5108": "crt_exit",
+    "004a55d2": "crt_vec_ctor",
+    "004a5713": "crt_vec_dtor",
+    "004a56d2": "crt_atexit",
+    "004a5800": "crt_strpbrk",
+    "004a583a": "crt_read",
+    "004a5a78": "crt_close",
+    "004a5b58": "crt_write",
+    "004a5d48": "crt_open",
+    "004a95bb": "crt_lseek",
+    "004a6057": "crt_tell",
+    "004a6070": "crt_chkstk",
+    "004a609f": "crt_fclose",
+    "004a614d": "crt_fopen",
+    "004a622c": "crt_fprintf",
+    "004a6268": "crt_fwrite",
+    "004a63a1": "crt_fread",
+    "004a64b8": "crt_remove",
+    "004a6570": "crt_isdigit",
+    "004a6598": "crt_isspace",
+    "004a65c0": "crt_isprint",
+    "004a65ee": "crt_fgets",
+    "004a6650": "crt_toupper",
+    "004a678b": "crt_strtok",
+    "004a6b08": "crt_atol",
+    "004a6b93": "crt_atoi",
+    "004a6d80": "crt_memmove",
+    "004a70b5": "crt_rewind",
+    "004a7119": "crt_fseek",
+    "004a71d2": "crt_tolower",
+    "004ad425": "crt_itoa",
+    "004ad4b0": "crt_stricmp",
+    "004ad580": "crt_strnicmp",
+    "004aa9f5": "crt_filbuf",
+    "004aa5a2": "crt_flsbuf",
+    "004a6170": "crt_strchr",
+    "004a64f0": "crt_strstr",
+    "004a6ad0": "crt_strncmp",
+    "004a6ba0": "crt_memchr",
+    "004a6c50": "crt_strrchr",
+    "004a6c80": "crt_strncpy",
+    "004abd90": "crt_memset",
+    "004abdf0": "crt_strlen",
+    "004abf30": "crt_strcmp",
+    "004a6030": "crt_ftol",
+    "004b65d6": "crt_sprintf",
+    "004b6628": "crt_sscanf"
+  },
+  "skip": [],
+  "patches": {
+    "FUN_0049ccc0": [
+      [
+        "FUN_0049cf50(iVar1)",
+        "FUN_0049cf50(param_1,iVar1)"
+      ]
+    ]
+  },
+  "class_libs": [
+    "Terrain"
+  ]
+}

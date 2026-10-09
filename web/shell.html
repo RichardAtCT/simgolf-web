@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimGolf</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { width: min(100vw, calc(100vh * 4 / 3)); aspect-ratio: 4 / 3; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+<script>
+  var Module = { canvas: document.getElementById('canvas'), fsDebug: true, apiTrace: /apitrace/.test(location.search), noVideos: /novideos/.test(location.search) };
+</script>
+<script>
+  // Prefetch: the game opens its files one at a time and waits for each fetch,
+  // so the ~1,000 files read before the main menu (and ~700 more when a course
+  // loads) cost a round trip each. preload.txt lists them in the order a first
+  // run reads them; they're fetched a few at a time from page start, and the
+  // game's fetch of a listed file takes the prefetched copy. ?noprefetch turns
+  // it off.
+  (function () {
+    if (/noprefetch/.test(location.search)) return;
+    var realFetch = window.fetch.bind(window);
+    var ready = new Map(), taken = new Set(), list = [], next = 0, inflight = 0;
+    var MAX_INFLIGHT = 8, MAX_AHEAD = 400;
+    function get(url) {
+      inflight++;
+      return realFetch(url).then(function (r) {
+        return r.ok ? r.arrayBuffer().then(function (b) { return new Response(b); }) : r;
+      }).catch(function () { return realFetch(url); }).finally(function () { inflight--; pump(); });
+    }
+    function pump() {
+      while (inflight < MAX_INFLIGHT && ready.size < MAX_AHEAD && next < list.length) {
+        var url = list[next++];
+        if (!taken.has(url)) ready.set(url, get(url));
+      }
+    }
+    window.fetch = function (input, init) {
+      if (typeof input === 'string' && input.lastIndexOf('game/', 0) === 0) {
+        taken.add(input);
+        var p = ready.get(input);
+        if (p) { ready.delete(input); pump(); return p; }
+      }
+      return realFetch(input, init);
+    };
+    realFetch('preload.txt').then(function (r) { return r.ok ? r.text() : ''; }).then(function (text) {
+      list = text.split('\n').filter(Boolean).map(function (n) {
+        return 'game/' + n.split('/').map(encodeURIComponent).join('/');
+      });
+      pump();
+    }).catch(function () {});
+  })();
+</script>
+<script>
+  // Crash reports: the last console lines plus the error go to the dev server
+  // (tools/boxedwine/serve.mjs appends them to build/browser.log).
+  (function () {
+    var lines = [], sent = 0;
+    ['log', 'warn', 'error'].forEach(function (k) {
+      var orig = console[k];
+      console[k] = function () {
+        var msg = Array.prototype.map.call(arguments, String).join(' ');
+        if (!/^fetch /.test(msg)) { lines.push(k + ' ' + msg); if (lines.length > 300) lines.shift(); }
+        return orig.apply(console, arguments);
+      };
+    });
+    function report(what) {
+      if (sent++ > 5) return;
+      var body = location.href + '\n' + navigator.userAgent + '\n' + what + '\n---- recent console\n' + lines.join('\n');
+      try { navigator.sendBeacon('/log', body); } catch (e) {}
+    }
+    addEventListener('error', function (e) { report('error: ' + e.message + '\n' + (e.error && e.error.stack || '')); });
+    addEventListener('unhandledrejection', function (e) { report('unhandledrejection: ' + (e.reason && (e.reason.stack || e.reason))); });
+    Module.onAbort = function (what) { report('abort: ' + what + '\n' + new Error().stack); };
+  })();
+</script>
+<script src="autosave.js"></script>
+{{{ SCRIPT }}}
+</body>
+</html>

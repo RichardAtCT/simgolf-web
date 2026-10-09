@@ -1,0 +1,15 @@
+# Original game files and anything derived from them are copyrighted (EA/Firaxis).
+# Never commit them — the port loads assets from the user's own copy at runtime.
+/game
+/assets/
+/decomp/
+*.exe
+*.dll
+*.pcx
+*.bik
+*.wav
+*.sve
+*.gpr
+*.rep/
+node_modules/
+build/

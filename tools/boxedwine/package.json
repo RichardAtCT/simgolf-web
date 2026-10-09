@@ -1,0 +1,6 @@
+{
+  "name": "simgolf-boxedwine-spike",
+  "private": true,
+  "type": "module",
+  "dependencies": { "playwright-core": "^1.56.0" }
+}
