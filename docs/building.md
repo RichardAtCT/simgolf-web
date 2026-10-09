@@ -35,4 +35,8 @@ Test it headlessly with
 `node tools/boxedwine/serve.mjs build/pages/site 8090` and
 `node tools/pages/test-install.mjs out.png <disc.iso> <nocd.zip>`.
 
-Publish by copying `build/pages/site` to the `gh-pages` branch.
+Publish with `tools/publish/sync-public.sh --site` from the development repo:
+it mirrors the committed code to the public repo's `main` (minus the paths in
+`.publicignore`, refusing anything that looks like game data or decompiler
+output) and pushes `build/pages/site` to `gh-pages`. Without `--site` it syncs
+the code only; `tools/publish/install-hook.sh` runs that after every commit.

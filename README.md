@@ -27,7 +27,6 @@ the game, and it never leaves your computer.
 
 - Saves stay in your browser. Press **Ctrl+F8** in the game to download a
   save or import one.
-- The intro and closing videos aren't played yet.
 - To start over with different files, press **Ctrl+F8** and use the button at
   the bottom of the panel.
 - Clearing your browser's site data for the page removes the unpacked game
@@ -47,4 +46,4 @@ This is an unofficial fan project, not affiliated with or endorsed by
 Firaxis Games, Electronic Arts or Take-Two Interactive. SimGolf and its
 assets are their property; this project distributes none of the game's files.
 The port's own code is MIT licensed ([LICENSE](LICENSE)); third-party pieces
-keep their licences (`third_party/`: unshield is MIT, 7-Zip is LGPL).
+keep their licences (`third_party/`: unshield and webm-muxer are MIT, 7-Zip and FFmpeg are LGPL).
