@@ -70,6 +70,10 @@
       [
         "&uStack_978",
         "auStack_974"
+      ],
+      [
+        "FUN_004498a0(DAT_004c2ba0,DAT_004c2ba4,DAT_004c2844,DAT_005685f4);",
+        "FUN_004498a0(DAT_004c2ba0,DAT_004c2ba4,DAT_004c2844,I2F(*(int *)0x5685f4));"
       ]
     ],
     "FUN_00470a60": [
