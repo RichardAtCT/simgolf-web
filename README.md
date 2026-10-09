@@ -11,19 +11,17 @@ the game, and it never leaves your computer.
 ## How to play
 
 1. Get the game files. You need two things:
-   - the **SimGolf CD image** (`.iso`), and
-   - the **v1.02 no-CD `golf.exe`** (it usually comes in a zip called
-     `SIMGOLF.102.ENG.MYTH.NOCD.ZIP`).
-
-   SimGolf is listed on abandonware sites such as
-   [MyAbandonware](https://www.myabandonware.com/search/q/simgolf), whose
-   download usually has both inside one zip. If yours comes as `.rar` or
-   `.7z`, extract it first.
+   - the **game disc**: the `.7z` from the
+     [Internet Archive](https://archive.org/details/sid-meiers-sim-golf-1641547)
+     (about 250 MB; an `.iso` of the disc from elsewhere works too), and
+   - the **v1.02 no-CD `golf.exe`**, usually a zip called
+     `SIMGOLF.102.ENG.MYTH.NOCD.ZIP`, from an abandonware site such as
+     [MyAbandonware](https://www.myabandonware.com/search/q/simgolf).
 2. Open the page in **Chrome or Edge, version 137 or newer**, on a desktop or
    laptop. (Firefox and Safari can't run it yet.)
-3. Click **Choose your game files** and pick the zip, or the `.iso` and the
-   no-CD `golf.exe`. The page unpacks the game in about half a minute and
-   starts it. Next time it goes straight to the game.
+3. Click **Choose your game files** and pick both files as they downloaded;
+   there's no need to unzip anything. The page unpacks the game in about a
+   minute and starts it. Next time it goes straight to the game.
 
 ## Good to know
 
@@ -49,4 +47,4 @@ This is an unofficial fan project, not affiliated with or endorsed by
 Firaxis Games, Electronic Arts or Take-Two Interactive. SimGolf and its
 assets are their property; this project distributes none of the game's files.
 The port's own code is MIT licensed ([LICENSE](LICENSE)); third-party pieces
-keep their licences (`third_party/`).
+keep their licences (`third_party/`: unshield is MIT, 7-Zip is LGPL).

@@ -13,6 +13,6 @@ rm -rf "$site"; mkdir -p "$site"
 cp build/pages/golf.html "$site/index.html"
 cp build/pages/golf.js build/pages/golf.wasm build/pages/golf.data \
    build/pages/autosave.js build/pages/install-worker.js build/pages/jgld-nops.json \
-   build/pages/unshield.js build/pages/unshield.wasm build/pages/og.png "$site/"
+   build/pages/unshield.js build/pages/unshield.wasm build/pages/og.png third_party/7z-wasm/7zz.umd.js third_party/7z-wasm/7zz.wasm "$site/"
 touch "$site/.nojekyll"
 du -sh "$site"; ls "$site"
