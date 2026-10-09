@@ -40,8 +40,12 @@ EM_ASYNC_JS(void, port_play_video, (const char *path, int background), {
     });
   });
   // Web Audio's master gain; the sound device may only appear mid-video.
+  // Pausing or ending the video fires one more timeupdate, so the mute stops
+  // once it's over or it would undo the unmute below.
   const gain = (value) => { const s = Module['soundDebug']; if (s && s.master) s.master.gain.value = value; };
+  let over = false;
   const cleanup = () => {
+    over = true;
     removeEventListener('keydown', onKey, true);
     v.pause();
     v.remove();
@@ -50,7 +54,7 @@ EM_ASYNC_JS(void, port_play_video, (const char *path, int background), {
   };
   if (background) {
     gain(0);
-    v.addEventListener('timeupdate', () => gain(0));
+    v.addEventListener('timeupdate', () => { if (!over) gain(0); });
     shown.then(cleanup);
     return;
   }
