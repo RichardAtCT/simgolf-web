@@ -159,10 +159,13 @@
       document.getElementById('count').style.display = 'block';
     };
     fetch(C + '/get' + KEY).then(function (r) { return r.ok ? r.json() : null; }).then(show).catch(function () {});
-    Module.postRun = (Module.postRun || []).concat(function () {
+    // onRuntimeInitialized, not postRun: main never returns (JSPI game loop), so postRun never runs
+    var prevInit = Module.onRuntimeInitialized;
+    Module.onRuntimeInitialized = function () {
+      if (prevInit) prevInit();
       try { if (sessionStorage.getItem('simgolf-counted')) return; sessionStorage.setItem('simgolf-counted', '1'); } catch (e) {}
       fetch(C + '/hit' + KEY).catch(function () {});
-    });
+    };
   })();
 
   // "Start over" in the Saves panel (Ctrl+F8): forget the unpacked game files

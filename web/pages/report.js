@@ -28,7 +28,8 @@
   addEventListener('error', function (e) { noteCrash((e.message || 'error') + (e.error && e.error.stack ? '\n' + e.error.stack : '')); });
   addEventListener('unhandledrejection', function (e) { noteCrash('unhandled rejection: ' + (e.reason && (e.reason.stack || e.reason))); });
   var started = false;
-  Module.postRun = (Module.postRun || []).concat(function () { started = true; });
+  var prevInit = Module.onRuntimeInitialized;   // postRun never runs: main doesn't return
+  Module.onRuntimeInitialized = function () { started = true; if (prevInit) prevInit(); };
   var prevAbort = Module.onAbort;
   Module.onAbort = function (what) { noteCrash('abort: ' + what); if (prevAbort) prevAbort(what); };
 
