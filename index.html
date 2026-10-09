@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="9b3980f">
+<html lang="en" data-build="86658ca">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -150,7 +150,7 @@
       <h1>SimGolf</h1>
     </div>
     <p class="tag">The 2002 classic, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
-    <div class="count" id="count">⛳ <b id="count-n"></b> <span id="count-w">rounds</span> teed off in the browser so far</div>
+    <div class="count" id="count">⛳ <b id="count-n"></b> <span id="count-w">rounds</span> teed off<span id="count-hw" style="display:none"> · <b id="count-h"></b> played</span> in the browser so far</div>
     <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
     <div id="ready" hidden>
@@ -189,26 +189,40 @@
 <script>
   var Module = { canvas: document.getElementById('canvas'), noVideos: false, quiet: true };
 
-  // Play counter: one anonymous hit each time the game starts in a tab
-  // (Abacus: a public counter service, no cookies or identifiers); the setup
-  // page shows the total.
+  // Play counters (Abacus: a public counter service, no cookies or
+  // identifiers; it only stores the numbers): one hit per tab when the game
+  // starts, and one hit per minute while the game is running in a visible
+  // tab. The setup page shows rounds and hours played.
   (function () {
-    var C = 'https://abacus.jasoncameron.dev';
-    var KEY = '/simgolf-web/rounds';
-    var show = function (j) {
-      if (!j || typeof j.value !== 'number' || j.value < 1) return;
-      document.getElementById('count-n').textContent = j.value.toLocaleString();
-      document.getElementById('count-w').textContent = j.value === 1 ? 'round' : 'rounds';
-      document.getElementById('count').style.display = 'block';
+    var C = 'https://abacus.jasoncameron.dev', NS = '/simgolf-web/';
+    var vals = {};
+    var get = function (k) {
+      return fetch(C + '/get' + NS + k).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && typeof j.value === 'number') vals[k] = j.value; }).catch(function () {});
     };
-    fetch(C + '/get' + KEY).then(function (r) { return r.ok ? r.json() : null; }).then(show).catch(function () {});
+    Promise.all([get('rounds'), get('minutes')]).then(function () {
+      var r = vals.rounds || 0, m = vals.minutes || 0;
+      if (r < 1) return;
+      document.getElementById('count-n').textContent = r.toLocaleString();
+      document.getElementById('count-w').textContent = r === 1 ? 'round' : 'rounds';
+      if (m >= 1) {
+        var h = m / 60;
+        document.getElementById('count-h').textContent = m < 60 ? m + (m === 1 ? ' minute' : ' minutes')
+          : (h < 10 ? h.toFixed(1) : Math.round(h).toLocaleString()) + (h < 1.05 ? ' hour' : ' hours');
+        document.getElementById('count-hw').style.display = 'inline';
+      }
+      document.getElementById('count').style.display = 'block';
+    });
+    var hit = function (k) { fetch(C + '/hit' + NS + k).catch(function () {}); };
     // onRuntimeInitialized, not postRun: main never returns (JSPI game loop), so postRun never runs
     var prevInit = Module.onRuntimeInitialized;
     Module.onRuntimeInitialized = function () {
       if (prevInit) prevInit();
       if (!/\.github\.io$/.test(location.hostname)) return;   // local test runs don't count
-      try { if (sessionStorage.getItem('simgolf-counted')) return; sessionStorage.setItem('simgolf-counted', '1'); } catch (e) {}
-      fetch(C + '/hit' + KEY).catch(function () {});
+      var counted = false;
+      try { counted = !!sessionStorage.getItem('simgolf-counted'); sessionStorage.setItem('simgolf-counted', '1'); } catch (e) {}
+      if (!counted) hit('rounds');
+      setInterval(function () { if (document.visibilityState === 'visible') hit('minutes'); }, 60000);
     };
   })();
 
