@@ -41,6 +41,11 @@ uint32_t icall_register_native(IcallFn fn);
 int port_load_image(const char *path, uint32_t base, uint32_t limit);
 void port_backtrace(void);
 void port_abort(const char *why) __attribute__((noreturn));
+
+// Development chatter (API calls, fonts, text, perf). Off when the page sets
+// Module.quiet, as the GitHub Pages build does.
+extern int port_quiet;
+#define PORT_LOG(...) do { if (!port_quiet) fprintf(stderr, __VA_ARGS__); } while (0)
 void port_halt(const char *fn, const char *why);
 void port_unimplemented(const char *name);
 void port_trace_dump(int n);

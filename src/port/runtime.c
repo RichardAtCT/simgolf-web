@@ -157,6 +157,8 @@ int port_load_image(const char *path, uint32_t base, uint32_t limit) {
   return got == (size_t)n;
 }
 
+int port_quiet;
+
 void port_unimplemented(const char *name) {
   fprintf(stderr, "unimplemented: %s\n", name);
 }

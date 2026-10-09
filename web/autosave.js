@@ -248,6 +248,7 @@
           '<button data-a="dl" data-id="' + s.id + '">Download</button></div>';
       });
       h += '<p id="sv-msg">' + esc(msg) + '</p>';
+      if (Module.savePanelFooter) h += Module.savePanelFooter;   // extra controls from the page
       panel.innerHTML = h;
     }).catch(function (e) { panel.textContent = 'Save history unavailable: ' + e; });
   }
@@ -255,6 +256,7 @@
     var a = e.target.getAttribute && e.target.getAttribute('data-a');
     if (!a) return;
     if (a === 'import') { file.click(); return; }
+    if (Module.onSavePanelAction && Module.onSavePanelAction(a)) return;
     var id = a === 'latest' ? null : Number(e.target.getAttribute('data-id'));
     (id === null ? list().then(function (s) { return get(s[0].id); }) : get(id)).then(function (snap) {
       if (!snap) return;

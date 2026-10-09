@@ -246,7 +246,7 @@ nu crt_fopen(nu path, nu mode) {
   int write = strchr(md, 'w') || strchr(md, 'a') || strchr(md, '+');
   char real[512];
   if (!fs_resolve(S(path), real, sizeof real, write)) {
-    fprintf(stderr, "fopen(%s, %s): not found\n", S(path), md);
+    PORT_LOG("fopen(%s, %s): not found\n", S(path), md);
     return 0;
   }
   char hm[8];

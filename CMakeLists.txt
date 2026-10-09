@@ -58,6 +58,7 @@ if(EXISTS "${SIMGOLF_GEN}/golf/golf_protos.h")
     configure_file(web/autosave.js "${CMAKE_BINARY_DIR}/autosave.js" COPYONLY)
     configure_file(web/pages/install-worker.js "${CMAKE_BINARY_DIR}/install-worker.js" COPYONLY)
     configure_file(web/pages/jgld-nops.json "${CMAKE_BINARY_DIR}/jgld-nops.json" COPYONLY)
+    configure_file(web/pages/og.png "${CMAKE_BINARY_DIR}/og.png" COPYONLY)
     set(SIMGOLF_SHELL "${CMAKE_SOURCE_DIR}/web/pages/shell.html")
     set(SIMGOLF_DATA_OPTS
       "SHELL:--preload-file \"${CMAKE_SOURCE_DIR}/third_party/fonts@/fonts\""

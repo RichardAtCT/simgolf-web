@@ -120,7 +120,7 @@ void win_yield(int ms) {
     extern unsigned g_presents;
     int handles = 0;
     for (int i = 1; i < MAX_OBJ; i++) handles += g_obj[i].kind != OBJ_FREE;
-    fprintf(stderr, "perf: %.1f frames/s, %.1f yields/s, game code %.0f%% of the time, %d/%d handles\n",
+    PORT_LOG("perf: %.1f frames/s, %.1f yields/s, game code %.0f%% of the time, %d/%d handles\n",
             (g_presents - last_p) * 1000.0 / (now - stat_t0),
             (g_yields - last_n) * 1000.0 / (now - stat_t0), busy * 100.0 / (now - stat_t0), handles, MAX_OBJ);
     last_n = g_yields; last_p = g_presents; stat_t0 = now; busy = 0;
@@ -472,7 +472,7 @@ nu RegisterClassA(nu wc) {
   API_TRACE();
   g_class_style = U32(wc, 0);
   g_wndproc = U32(wc, 4);
-  fprintf(stderr, "RegisterClassA %s wndproc %08x style %x\n", S(U32(wc, 36)), g_wndproc, g_class_style);
+  PORT_LOG("RegisterClassA %s wndproc %08x style %x\n", S(U32(wc, 36)), g_wndproc, g_class_style);
   return 0xc001;
 }
 
@@ -485,7 +485,7 @@ nu CreateWindowExA(nu exstyle, nu cls, nu title, nu style, nu x, nu y, nu w, nu 
   API_TRACE();
   (void)exstyle; (void)cls; (void)style; (void)x; (void)y; (void)w; (void)h;
   (void)parent; (void)menu;
-  fprintf(stderr, "CreateWindowExA \"%s\" %dx%d\n", title ? S(title) : "", (int)w, (int)h);
+  PORT_LOG("CreateWindowExA \"%s\" %dx%d\n", title ? S(title) : "", (int)w, (int)h);
 
   // CREATESTRUCTA: lpCreateParams, hInstance, hMenu, hwndParent, cy, cx, y, x, style, name, class, exstyle
   static uint32_t cs[12];
@@ -620,7 +620,7 @@ nu LoadIconA(nu inst, nu name) { API_TRACE(); return shared_icon(inst, name); }
 nu LoadImageA(nu inst, nu name, nu type, nu cx, nu cy, nu flags) {
   API_TRACE();
   (void)inst; (void)type; (void)cx; (void)cy; (void)flags;
-  fprintf(stderr, "LoadImageA %s\n", (name >> 16) ? S(name) : "(resource)");
+  PORT_LOG("LoadImageA %s\n", (name >> 16) ? S(name) : "(resource)");
   return obj_new(OBJ_ICON, NULL);
 }
 nu DestroyCursor(nu c) {
@@ -748,7 +748,7 @@ extern void jgld_attach(void);
 nu LoadLibraryA(nu name) {
   API_TRACE();
   const char *n = S(name);
-  fprintf(stderr, "LoadLibraryA %s\n", n);
+  PORT_LOG("LoadLibraryA %s\n", n);
   if (strcasestr(n, "jgl")) {
     jgld_attach();
     return WIN_JGLD_BASE;

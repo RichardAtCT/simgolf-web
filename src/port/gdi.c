@@ -236,7 +236,7 @@ nu CreateDIBSection(nu hdc, nu bmi, nu usage, nu ppbits, nu section, nu offset) 
   d->bottom_up = h > 0;
   d->bpp = U16(bmi, 14);
   d->stride = ((w * d->bpp + 31) / 32) * 4;
-  fprintf(stderr, "CreateDIBSection %dx%d %d bpp\n", w, h, d->bpp);
+  PORT_LOG("CreateDIBSection %dx%d %d bpp\n", w, h, d->bpp);
   if (w <= 0 || w > 4096 || d->h > 4096 || !d->bpp) {
     port_trace_dump(48);
     port_abort("CreateDIBSection: bad size");
@@ -503,7 +503,7 @@ static int load_font_file(const char *dospath) {
   int k = 0;
   for (int i = 1; name && i < len && k < 63; i += 2) ff->family[k++] = name[i];
   ff->family[k] = 0;
-  fprintf(stderr, "font %s: family \"%s\"\n", dospath, ff->family);
+  PORT_LOG("font %s: family \"%s\"\n", dospath, ff->family);
   return g_nfonts++;
 }
 
@@ -574,7 +574,7 @@ nu CreateFontIndirectA(nu lf) {
   f->italic = U8(lf, 20);
   f->underline = U8(lf, 21);
   nu hf = obj_new(OBJ_FONT, f);
-  fprintf(stderr, "CreateFont \"%s\" %d -> %08x\n", face, (int)height, hf);
+  PORT_LOG("CreateFont \"%s\" %d -> %08x\n", face, (int)height, hf);
   return hf;
 }
 
@@ -672,7 +672,7 @@ nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
   {
     static int logged;
     if (logged++ < 40)
-      fprintf(stderr, "TextOut \"%.*s\" at %d,%d color %06x align %d dib %dx%d bpp %d font h%d clip %d\n",
+      PORT_LOG("TextOut \"%.*s\" at %d,%d color %06x align %d dib %dx%d bpp %d font h%d clip %d\n",
               (int)n, s, (int)x, (int)y, cr, dc->text_align, d->w, d->h, d->bpp, f->height, dc->has_clip);
   }
   uint16_t c555 = (uint16_t)((((cr & 0xff) >> 3) << 10) | ((((cr >> 8) & 0xff) >> 3) << 5) | (((cr >> 16) & 0xff) >> 3));

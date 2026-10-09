@@ -30,7 +30,8 @@ the game, and it never leaves your computer.
 - Saves stay in your browser. Press **Ctrl+F8** in the game to download a
   save or import one.
 - The intro and closing videos aren't played yet.
-- To start over with different files, add `?reset` to the page address.
+- To start over with different files, press **Ctrl+F8** and use the button at
+  the bottom of the panel.
 - Clearing your browser's site data for the page removes the unpacked game
   and your saves (download the saves first).
 

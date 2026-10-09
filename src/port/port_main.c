@@ -56,6 +56,7 @@ void jgld_attach(void) {
 }
 
 int main(void) {
+  port_quiet = EM_ASM_INT({ return Module.quiet ? 1 : 0; });
   fs_init();
   if (!port_load_image("/image/golf.bin", PORT_GOLF_BASE, PORT_GOLF_LIMIT)) {
     fprintf(stderr, "golf image missing\n");

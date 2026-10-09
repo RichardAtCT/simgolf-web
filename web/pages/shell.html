@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimGolf in the browser</title>
 <link rel="icon" href="data:,">
+<meta name="description" content="Sid Meier's SimGolf (2002) running in your browser. Bring your own game files; nothing is uploaded.">
+<meta property="og:title" content="Sid Meier's SimGolf in your browser">
+<meta property="og:description" content="The 2002 classic, ported to WebAssembly. Bring your own game files.">
+<meta property="og:image" content="https://richardatct.github.io/simgolf-web/og.png">
+<meta property="og:url" content="https://richardatct.github.io/simgolf-web/">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root { --bg: #0f1a12; --panel: #17261b; --ink: #e9efe6; --dim: #9fb3a2; --accent: #8fd16a; --bad: #ff8a7a; --line: #2c4332; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -29,7 +35,7 @@
   #msg { min-height: 24px; color: var(--dim); font-size: 14px; overflow-wrap: anywhere; }
   #msg.bad { color: var(--bad); }
   .note { color: var(--dim); font-size: 14px; border-top: 1px solid var(--line); margin-top: 24px; padding-top: 14px; }
-  #unsupported { display: none; background: #3a1d19; border: 1px solid #6b2f27; border-radius: 10px; padding: 12px 14px; margin: 0 0 20px; }
+  .warn, #unsupported { display: none; background: #3a1d19; border: 1px solid #6b2f27; border-radius: 10px; padding: 12px 14px; margin: 0 0 20px; }
 </style>
 </head>
 <body>
@@ -39,6 +45,7 @@
   <div class="card">
     <h1>Sid Meier's SimGolf</h1>
     <p class="sub">The 2002 game, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
+    <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
     <ol>
       <li>Download the game. You need the <strong>SimGolf CD image</strong> (<code>.iso</code>) and the <strong>v1.02 no-CD <code>golf.exe</code></strong>. The download on <a href="https://www.myabandonware.com/search/q/simgolf" target="_blank" rel="noopener">MyAbandonware</a> or other abandonware sites usually comes as one zip with both inside.</li>
@@ -52,13 +59,23 @@
     </label>
     <div id="bar"><div></div></div>
     <div id="msg"></div>
-    <p class="note">The game's intro and closing videos aren't played in this version. Saves stay in this browser; use <strong>Ctrl+F8</strong> in the game to download or import them. To start over with different files, open this page with <code>?reset</code> on the end of the address.</p>
+    <p class="note">The game's intro and closing videos aren't played in this version. Saves stay in this browser; use <strong>Ctrl+F8</strong> in the game to download or import them. To start over with different files, use the button at the bottom of that panel.</p>
     <p class="note">An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a>.</p>
   </div>
 </div>
 
 <script>
-  var Module = { canvas: document.getElementById('canvas'), noVideos: true };
+  var Module = { canvas: document.getElementById('canvas'), noVideos: true, quiet: true };
+
+  // "Start over" in the Saves panel (Ctrl+F8): forget the unpacked game files
+  // (saves are kept) and go back to the setup screen.
+  Module.savePanelFooter = '<div class="bar" style="margin-top:14px;border-top:1px solid #444;padding-top:10px">' +
+    '<button data-a="forget">Start over with different game files…</button></div>';
+  Module.onSavePanelAction = function (a) {
+    if (a !== 'forget') return false;
+    if (confirm('Remove the unpacked game files from this browser and choose them again? Your saves are kept.')) location.search = '?reset';
+    return true;
+  };
 
   // Game files live in the origin private file system (written by
   // install-worker.js). The game fetches them as game/<path> and its sounds
@@ -139,7 +156,10 @@
 
     async function ask() {
       setup.classList.add('on');
-      if (!supported) { document.getElementById('unsupported').style.display = 'block'; return new Promise(function () {}); }
+      var mobile = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+      if (mobile) document.getElementById('mobile').style.display = 'block';
+      else if (!supported) document.getElementById('unsupported').style.display = 'block';
+      if (mobile || !supported) { document.getElementById('drop').style.display = 'none'; return new Promise(function () {}); }
       var drop = document.getElementById('drop'), pick = document.getElementById('pick');
       return new Promise(function (resolve) {
         var go = function (files) {
