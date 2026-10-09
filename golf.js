@@ -76,7 +76,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp_lhl1d1l.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp5bd0t6ys.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,21 +204,21 @@ Module['FS_createPath']("/", "fonts", true, true);
 
   })();
 
-// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp_lhl1d1l.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpli_bozoh.js
+// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp5bd0t6ys.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmprqx0g06o.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpli_bozoh.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpi037gdgv.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmprqx0g06o.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpdccjk_t2.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpi037gdgv.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpdccjk_t2.js
 
 
 var programArgs = [];
@@ -9299,12 +9299,17 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
   failed:false,
   gl:null,
   canvas:null,
+  textOn:true,
   textures:new Map,
+  fonts:[],
+  textRuns:null,
+  textKey:null,
   builds:0,
   init() {
         const q = new URLSearchParams(location.search);
         if (q.get('hd') === '0' || q.get('hd') === 'off') HD.enabled = false;
         if (q.get('hdterrain') === '0') HD.terrainOn = false;
+        if (q.get('hdtext') === '0') HD.textOn = false;
         const f = HD.FILTERS.indexOf(q.get('filter'));
         if (f >= 0) HD.filter = f;
         HD.debug = q.has('hddebug') ? 1 : 0;  // tints the pixels the terrain layer replaces
@@ -9484,6 +9489,21 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
           o = vec4(c, 1.0);
         }`);
   
+        HD.textProg = HD.shader(gl, `#version 300 es
+        out vec2 vUV;
+        void main() {
+          vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+          vUV = vec2(p.x, 1.0 - p.y);
+          gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+        }`, `#version 300 es
+        precision highp float;
+        uniform sampler2D uText;
+        in vec2 vUV;
+        out vec4 o;
+        void main() { o = texture(uText, vUV); }`);
+        HD.textCanvas = document.createElement('canvas');
+        HD.textCtx = HD.textCanvas.getContext('2d');
+  
         HD.vbo = gl.createBuffer();
         HD.vao = gl.createVertexArray();
         gl.bindVertexArray(HD.vao);
@@ -9509,6 +9529,7 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
         HD.screenTex = tex(gl.NEAREST);
         HD.maskTex = tex(gl.LINEAR);
         HD.terrainTex = tex(gl.LINEAR);
+        HD.textTex = tex(gl.NEAREST);
         HD.fbo = gl.createFramebuffer();
         HD.fboSize = [0, 0];
         HD.srcSize = [0, 0];
@@ -9527,6 +9548,54 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
         HD.canvas.width = w;
         HD.canvas.height = h;
         return true;
+      },
+  drawText(w, h) {
+        const gl = HD.gl, c = HD.textCanvas, W = HD.canvas.width, H = HD.canvas.height;
+        const r = HD.textRuns;
+        const k = HD.textKey;
+        const same = k && k.W === W && k.H === H && k.r.length === r.length && k.r.every((v, i) => v === r[i]);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, HD.textTex);
+        if (!same) {
+          if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+          const ctx = HD.textCtx, sx = W / w, sy = H / h;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, W, H);
+          ctx.setTransform(sx, 0, 0, sy, 0, 0);
+          ctx.textBaseline = 'alphabetic';
+          ctx.textAlign = 'left';
+          // Runs come newest first; paint oldest first.
+          const starts = [];
+          for (let i = 0; i < r.length; i += 13 + r[i + 12] * 3) starts.push(i);
+          for (let j = starts.length - 1; j >= 0; j--) {
+            const i = starts[j];
+            const rgb = r[i + 2], n = r[i + 12];
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(r[i + 5], r[i + 6], r[i + 7] - r[i + 5], r[i + 8] - r[i + 6]);
+            ctx.clip();
+            ctx.fillStyle = `rgb(${rgb & 255},${(rgb >> 8) & 255},${(rgb >> 16) & 255})`;
+            ctx.font = `${r[i + 1]}px "${HD.fonts[r[i]].family}"`;
+            // The game's bold is the glyph drawn again one pixel to the right.
+            const steps = r[i + 3] ? Math.max(1, Math.ceil(sx)) : 0;
+            for (let g = 0; g < n; g++) {
+              const ch = String.fromCharCode(r[i + 13 + g * 3]), x = r[i + 14 + g * 3], y = r[i + 15 + g * 3];
+              for (let t = 0; t <= steps; t++) ctx.fillText(ch, x + (steps ? t / steps : 0), y);
+            }
+            if (r[i + 4]) ctx.fillRect(r[i + 9], r[i + 11], r[i + 10] - r[i + 9], 1);
+            ctx.restore();
+          }
+          gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+          gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+          HD.textKey = { W, H, r };
+        }
+        gl.useProgram(HD.textProg.p);
+        gl.uniform1i(HD.textProg.u.uText, 0);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.disable(gl.BLEND);
       },
   show(on) {
         if (HD.canvas) HD.canvas.style.display = on ? '' : 'none';
@@ -9548,6 +9617,23 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       HD.show(on);
       // 2: the output size changed, so the terrain needs re-rendering.
       return !on ? 0 : HD.layout() ? 2 : 1;
+    }
+
+  
+  function _hd_js_font(file, data, size) {
+      let f = HD.fonts[file];
+      if (!f) {
+        f = HD.fonts[file] = { state: 0, family: 'simgolf-font-' + file };
+        try {
+          const face = new FontFace(f.family, HEAPU8.slice(data, data + size).buffer);
+          face.load().then((ff) => { document.fonts.add(ff); f.state = 1; },
+                           (e) => { f.state = -1; err('hd: font ' + file + ': ' + e); });
+        } catch (e) {
+          f.state = -1;
+          err('hd: font ' + file + ': ' + e);
+        }
+      }
+      return f.state === 1 ? 1 : 0;
     }
 
   
@@ -9589,6 +9675,7 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
       gl.viewport(0, 0, HD.canvas.width, HD.canvas.height);
       gl.bindVertexArray(HD.emptyVao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (HD.textRuns) HD.drawText(w, h);
       gl.bindVertexArray(null);
       gl.activeTexture(gl.TEXTURE0);
     }
@@ -9644,6 +9731,13 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
     }
 
   function _hd_js_terrain_on() { return HD.terrainOn ? 1 : 0; }
+
+  
+  function _hd_js_text(runs, n) {
+      HD.textRuns = n ? HEAPF32.slice(runs >> 2, (runs >> 2) + n) : null;
+    }
+
+  function _hd_js_text_on() { return HD.textOn ? 1 : 0; }
 
   
   function _hd_js_texture(serial, w, h, rgba) {
@@ -11088,11 +11182,17 @@ var wasmImports = {
   /** @export */
   hd_js_active: _hd_js_active,
   /** @export */
+  hd_js_font: _hd_js_font,
+  /** @export */
   hd_js_frame: _hd_js_frame,
   /** @export */
   hd_js_terrain: _hd_js_terrain,
   /** @export */
   hd_js_terrain_on: _hd_js_terrain_on,
+  /** @export */
+  hd_js_text: _hd_js_text,
+  /** @export */
+  hd_js_text_on: _hd_js_text_on,
   /** @export */
   hd_js_texture: _hd_js_texture,
   /** @export */
