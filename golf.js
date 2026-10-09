@@ -76,7 +76,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp4xr5tmks.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpalk_zu02.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -204,21 +204,21 @@ Module['FS_createPath']("/", "fonts", true, true);
 
   })();
 
-// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp4xr5tmks.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpo1ij5ulq.js
+// end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpalk_zu02.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpf_gngzic.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpo1ij5ulq.js
-// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpmo1v0mha.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpf_gngzic.js
+// include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp5nmlou4o.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmpmo1v0mha.js
+  // end include: /var/folders/fm/vlx5541955x4syx0g_pz6nb00000gn/T/tmp5nmlou4o.js
 
 
 var programArgs = [];

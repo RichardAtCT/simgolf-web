@@ -193,6 +193,41 @@ async function zipToScratch(file, e, scratch, name) {
   return fh.getFile();
 }
 
+// .7z / .rar (archive.org's rip is a .7z holding BIN/CUE): unpacked with
+// 7-Zip compiled to wasm (third_party/7z-wasm), loaded only when needed. The
+// archive is read in place through WORKERFS; disc images are moved out of the
+// wasm heap into scratch OPFS files as soon as they're extracted.
+async function un7z(file, scratch) {
+  progress(0.01, 'Unpacking ' + file.name + ' (this takes a minute)…');
+  if (!self.SevenZip) importScripts('7zz.umd.js');
+  const sz = await SevenZip({ locateFile: (p) => p, print: () => {}, printErr: () => {} });
+  sz.FS.mkdir('/in');
+  sz.FS.mount(sz.WORKERFS, { files: [file] }, '/in');
+  sz.FS.mkdir('/out');
+  try { sz.callMain(['x', '/in/' + file.name, '-o/out', '-y', '-bd']); }
+  catch (e) { if (!(e && e.name === 'ExitStatus' && e.status === 0)) throw new Error("Couldn't unpack " + file.name + '.'); }
+  const out = [];
+  const walk = async (dir) => {
+    for (const name of sz.FS.readdir(dir)) {
+      if (name === '.' || name === '..') continue;
+      const p = dir + '/' + name;
+      if (sz.FS.isDir(sz.FS.stat(p).mode)) { await walk(p); continue; }
+      const lower = name.toLowerCase();
+      if (!/\.(iso|bin|img|mdf|exe|zip)$/.test(lower)) { sz.FS.unlink(p); continue; }
+      const data = sz.FS.readFile(p);
+      sz.FS.unlink(p);
+      if (/\.(iso|bin|img|mdf)$/.test(lower)) {
+        const fh = await scratch.getFileHandle('x' + out.length + '.' + lower.split('.').pop(), { create: true });
+        const h = await fh.createSyncAccessHandle();
+        try { h.truncate(0); h.write(data, { at: 0 }); h.flush(); } finally { h.close(); }
+        out.push(new File([await fh.getFile()], name));
+      } else out.push(new File([data], name));
+    }
+  };
+  await walk('/out');
+  return out;
+}
+
 function missing(text) { const e = new Error(text); e.missing = true; return e; }
 
 // Accepts the disc image (.iso/.bin/.img/.mdf), golf.exe, the no-CD zip, or a
@@ -219,8 +254,11 @@ async function classify(files, scratch) {
       }
       return;
     }
-    if (/\.(cue|mds|nfo|txt)$/.test(lower)) return;
-    if (/\.(rar|7z)$/.test(lower)) throw new Error(`${f.name} is a compressed archive this page can't open: extract it first and choose the files inside.`);
+    if (/\.(7z|rar)$/.test(lower)) {
+      for (const x of await un7z(f, scratch)) await visit(x);
+      return;
+    }
+    if (/\.(cue|mds|nfo|txt|log)$/.test(lower)) return;
     throw new Error(`Not sure what ${f.name} is. Choose the SimGolf disc image (.iso) and the no-CD golf.exe, or the zip they came in.`);
   };
   for (const f of files) await visit(f);
