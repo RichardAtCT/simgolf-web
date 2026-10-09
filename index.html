@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="8f06f88">
+<html lang="en" data-build="f33aee0">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -81,6 +81,12 @@
   .warn, #unsupported { display: none; margin: 0 0 18px; padding: 12px 20px; border-radius: 28px; font-weight: 700;
     background: #ffe3dc; color: #7a1a12; border: 3px solid #b3261e; box-shadow: 0 4px 0 rgba(122,26,18,.3); }
 
+  .coffee { display: flex; align-items: center; justify-content: center; gap: 10px; width: max-content; max-width: 100%; margin: 26px auto 0; padding: 10px 22px 10px 12px; border-radius: 40px;
+    text-decoration: none; color: #fff; font: 800 18px/1.1 "Baloo 2", sans-serif; background: linear-gradient(#a0521f, var(--wood) 60%, var(--wood-dark));
+    border: 3px solid #3a1806; box-shadow: 0 0 0 2px rgba(255,255,255,.35) inset, 0 5px 0 rgba(58,24,6,.35); transition: transform .12s; }
+  .coffee:hover { color: #fff; transform: translateY(-2px); }
+  .coffee .cup { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--cream); border: 2px solid #3a1806; font-size: 20px; }
+  .coffee small { display: block; font: 700 12px/1.2 Nunito, sans-serif; color: #f4dcc5; }
   .wood { margin-top: 28px; padding: 16px 22px; border-radius: 18px; color: #fbeedd; font-size: 14px;
     background: repeating-linear-gradient(178deg, rgba(255,255,255,.04) 0 3px, transparent 3px 9px), linear-gradient(var(--wood), var(--wood-dark));
     border: 3px solid #3a1806; box-shadow: inset 0 2px 0 rgba(255,255,255,.18), 0 5px 0 rgba(58,24,6,.35); }
@@ -126,6 +132,7 @@
     </label>
     <div id="bar"><div></div></div>
     <div id="msg" role="status"></div>
+    <a class="coffee" href="https://donate.stripe.com/eVq6oG1U46TL3ut28h9R600" target="_blank" rel="noopener"><span class="cup" aria-hidden="true">☕</span><span>Buy me a coffee<small>Enjoying SimGolf again? Chip in to keep the port going.</small></span></a>
     <div class="wood">
       <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, report a problem, or start over with different game files.</p>
       <p>An unofficial fan project, not affiliated with Firaxis Games, Electronic Arts or Take-Two Interactive. This page hosts none of the game's files. <a href="https://github.com/RichardAtCT/simgolf-web" target="_blank" rel="noopener">Source and instructions</a> · <a href="#" onclick="simgolfReport.open(); return false">Report a problem</a>.</p>
