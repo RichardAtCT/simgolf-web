@@ -13,13 +13,18 @@
 //    driver copies the view into before sprites and UI are drawn on top
 //    (docs/terrain.md, "The golf per-frame driver").
 //
+//  - Text: everything the game writes with TextOut that reaches the window
+//    unscaled is erased from the frame and redrawn in its font at full
+//    resolution (gdi.c, gdi_hd_text).
+//
 // Toggles: ?hd=0 starts with all of this off, ?filter=xbr|linear|nearest picks
-// the 2D filter. Ctrl+F9 toggles the high-resolution terrain, Ctrl+F10 cycles
+// the 2D filter, ?hdtext=0 leaves the text as the game drew it. Ctrl+F9 toggles the high-resolution terrain, Ctrl+F10 cycles
 // the 2D filter, Ctrl+F11 turns the whole thing off and on.
 
 #include <emscripten.h>
 #include <emscripten/heap.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "port/win32.h"
 
@@ -37,6 +42,12 @@ extern int hd_js_terrain_on(void);
 extern void hd_js_texture(int serial, int w, int h, const uint8_t *rgba);
 extern void hd_js_terrain(const float *verts, int nverts, const int32_t *batches, int nbatches, int tw, int th);
 extern void hd_js_frame(const uint16_t *screen, int w, int h, const uint8_t *mask);
+extern int hd_js_text_on(void);
+extern int hd_js_font(int file, const void *data, int size);
+extern void hd_js_text(const float *runs, int n);
+
+// gdi.c: the screen without the text that still stands, and that text as runs.
+extern int gdi_hd_text(uint16_t *frame, float *out, int cap, int (*font_ready)(int, const void *, int));
 
 #define GOLF_TERRAIN_CACHE 0x4C1574u  // Surface wrapper or Surface*, golf.exe v1.02
 #define GRAPHSY_SURFACE_VTBL 0x1011d0b0u
@@ -87,6 +98,20 @@ int hd_present(const uint16_t *screen) {
   int active = hd_js_active();
   if (!active) return 0;
   if (active == 2) terrain_hd_invalidate();
+  // Text: redrawn at full resolution by hd_web.js, so the frame goes up without it.
+  // On the heap: growing static data moves the stack, and golf's FUN_00462020
+  // indexes a table with a stack address (lost vcall arguments), which then
+  // lands out of bounds.
+  enum { kRuns = 1 << 16 };
+  static uint16_t *frame;
+  static float *runs;
+  if (!frame) frame = malloc(WIN_SCREEN_W * WIN_SCREEN_H * 2), runs = malloc(kRuns * sizeof *runs);
+  int nruns = 0;
+  if (hd_js_text_on()) {
+    nruns = gdi_hd_text(frame, runs, kRuns, hd_js_font);
+    screen = frame;
+  }
+  hd_js_text(runs, nruns);
   static uint8_t mask[WIN_SCREEN_W * WIN_SCREEN_H * 2];
   int terrain = 0;
   Surf c;

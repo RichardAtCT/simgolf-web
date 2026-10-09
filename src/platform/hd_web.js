@@ -2,7 +2,9 @@
 // for what the layers are and how they're combined.
 //
 // The game's 800x600 frame is uploaded as-is (R16UI, RGB555) and decoded in
-// the shaders. The terrain triangles from terrain_hd.cpp are replayed into a
+// the shaders. Its text comes separately (gdi.c, gdi_hd_text): the frame
+// arrives with the text erased, and the runs are drawn here with Canvas2D in
+// the game's own fonts at the output resolution, then laid over the result. The terrain triangles from terrain_hd.cpp are replayed into a
 // framebuffer the size of the display canvas, in their recorded (painter's)
 // order with no depth test, like the original's generic GL.
 
@@ -15,13 +17,18 @@ addToLibrary({
     failed: false,
     gl: null,
     canvas: null,
+    textOn: true,
     textures: new Map(),  // serial -> {tex, used}
+    fonts: [],            // gdi.c font file -> {state, family}
+    textRuns: null,
+    textKey: null,
     builds: 0,
 
     init() {
       const q = new URLSearchParams(location.search);
       if (q.get('hd') === '0' || q.get('hd') === 'off') HD.enabled = false;
       if (q.get('hdterrain') === '0') HD.terrainOn = false;
+      if (q.get('hdtext') === '0') HD.textOn = false;
       const f = HD.FILTERS.indexOf(q.get('filter'));
       if (f >= 0) HD.filter = f;
       HD.debug = q.has('hddebug') ? 1 : 0;  // tints the pixels the terrain layer replaces
@@ -203,6 +210,21 @@ addToLibrary({
           o = vec4(c, 1.0);
         }`);
 
+      HD.textProg = HD.shader(gl, `#version 300 es
+        out vec2 vUV;
+        void main() {
+          vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+          vUV = vec2(p.x, 1.0 - p.y);
+          gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+        }`, `#version 300 es
+        precision highp float;
+        uniform sampler2D uText;
+        in vec2 vUV;
+        out vec4 o;
+        void main() { o = texture(uText, vUV); }`);
+      HD.textCanvas = document.createElement('canvas');
+      HD.textCtx = HD.textCanvas.getContext('2d');
+
       HD.vbo = gl.createBuffer();
       HD.vao = gl.createVertexArray();
       gl.bindVertexArray(HD.vao);
@@ -228,6 +250,7 @@ addToLibrary({
       HD.screenTex = tex(gl.NEAREST);
       HD.maskTex = tex(gl.LINEAR);
       HD.terrainTex = tex(gl.LINEAR);
+      HD.textTex = tex(gl.NEAREST);
       HD.fbo = gl.createFramebuffer();
       HD.fboSize = [0, 0];
       HD.srcSize = [0, 0];
@@ -248,6 +271,57 @@ addToLibrary({
       HD.canvas.width = w;
       HD.canvas.height = h;
       return true;
+    },
+
+    // Draws the runs from gdi_hd_text over the output. The overlay is only
+    // re-rendered when the runs or the output size change.
+    drawText(w, h) {
+      const gl = HD.gl, c = HD.textCanvas, W = HD.canvas.width, H = HD.canvas.height;
+      const r = HD.textRuns;
+      const k = HD.textKey;
+      const same = k && k.W === W && k.H === H && k.r.length === r.length && k.r.every((v, i) => v === r[i]);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, HD.textTex);
+      if (!same) {
+        if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+        const ctx = HD.textCtx, sx = W / w, sy = H / h;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        ctx.setTransform(sx, 0, 0, sy, 0, 0);
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'left';
+        // Runs come newest first; paint oldest first.
+        const starts = [];
+        for (let i = 0; i < r.length; i += 13 + r[i + 12] * 3) starts.push(i);
+        for (let j = starts.length - 1; j >= 0; j--) {
+          const i = starts[j];
+          const rgb = r[i + 2], n = r[i + 12];
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(r[i + 5], r[i + 6], r[i + 7] - r[i + 5], r[i + 8] - r[i + 6]);
+          ctx.clip();
+          ctx.fillStyle = `rgb(${rgb & 255},${(rgb >> 8) & 255},${(rgb >> 16) & 255})`;
+          ctx.font = `${r[i + 1]}px "${HD.fonts[r[i]].family}"`;
+          // The game's bold is the glyph drawn again one pixel to the right.
+          const steps = r[i + 3] ? Math.max(1, Math.ceil(sx)) : 0;
+          for (let g = 0; g < n; g++) {
+            const ch = String.fromCharCode(r[i + 13 + g * 3]), x = r[i + 14 + g * 3], y = r[i + 15 + g * 3];
+            for (let t = 0; t <= steps; t++) ctx.fillText(ch, x + (steps ? t / steps : 0), y);
+          }
+          if (r[i + 4]) ctx.fillRect(r[i + 9], r[i + 11], r[i + 10] - r[i + 9], 1);
+          ctx.restore();
+        }
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        HD.textKey = { W, H, r };
+      }
+      gl.useProgram(HD.textProg.p);
+      gl.uniform1i(HD.textProg.u.uText, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.disable(gl.BLEND);
     },
 
     show(on) {
@@ -276,6 +350,32 @@ addToLibrary({
 
   hd_js_terrain_on__deps: ['$HD'],
   hd_js_terrain_on: function () { return HD.terrainOn ? 1 : 0; },
+
+  hd_js_text_on__deps: ['$HD'],
+  hd_js_text_on: function () { return HD.textOn ? 1 : 0; },
+
+  // 1 once gdi.c's font `file` can be drawn here; the first call starts loading it.
+  hd_js_font__deps: ['$HD'],
+  hd_js_font: function (file, data, size) {
+    let f = HD.fonts[file];
+    if (!f) {
+      f = HD.fonts[file] = { state: 0, family: 'simgolf-font-' + file };
+      try {
+        const face = new FontFace(f.family, HEAPU8.slice(data, data + size).buffer);
+        face.load().then((ff) => { document.fonts.add(ff); f.state = 1; },
+                         (e) => { f.state = -1; err('hd: font ' + file + ': ' + e); });
+      } catch (e) {
+        f.state = -1;
+        err('hd: font ' + file + ': ' + e);
+      }
+    }
+    return f.state === 1 ? 1 : 0;
+  },
+
+  hd_js_text__deps: ['$HD'],
+  hd_js_text: function (runs, n) {
+    HD.textRuns = n ? HEAPF32.slice(runs >> 2, (runs >> 2) + n) : null;
+  },
 
   hd_js_texture__deps: ['$HD'],
   hd_js_texture: function (serial, w, h, rgba) {
@@ -381,6 +481,7 @@ addToLibrary({
     gl.viewport(0, 0, HD.canvas.width, HD.canvas.height);
     gl.bindVertexArray(HD.emptyVao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (HD.textRuns) HD.drawText(w, h);
     gl.bindVertexArray(null);
     gl.activeTexture(gl.TEXTURE0);
   },

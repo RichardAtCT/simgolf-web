@@ -207,10 +207,13 @@ nu SelectObject(nu hdc, nu h) {
   return old ? old : GetStockObject(0);
 }
 
+static void text_forget(Dib *d);
+
 nu DeleteObject(nu h) {
   API_TRACE();
   Dib *d = obj_get(h, OBJ_BITMAP);
   if (d && d != &g_screen_dib) {
+    text_forget(d);
     if (d->owns_bits) free(d->bits);
     free(d);
     obj_free(h);
@@ -377,6 +380,8 @@ static uint16_t from_src16(Dib *src, uint16_t c) {
   return (uint16_t)(((c >> 1) & 0x7c00) | ((c >> 1) & 0x3e0) | (c & 0x1f));
 }
 
+static void text_copy(Dib *dst, int dx, int dy, int w, int h, Dib *src, int sx, int sy);
+
 static void blit_pixels(Dib *dst, int dx, int dy, int w, int h, Dib *src, int sx, int sy,
                         int sw, int shh, const int32_t *clip) {
   // dst rect (dx, dy, w, h) maps to src rect (sx, sy, sw, shh); nearest neighbour.
@@ -405,6 +410,15 @@ static void blit_pixels(Dib *dst, int dx, int dy, int w, int h, Dib *src, int sx
       for (int k = 0; k < b - a; k++) drow[k] = pal[srow[k]];
     }
     return;
+  }
+  if (src->bpp == 16 && dst->bpp == 16 && sw == w && shh == h && src->is565 == dst->is565) {
+    // Unscaled: the text drawn on src comes along (gdi_hd_text).
+    int a = x0, b = x1, c = y0, e = y1;
+    if (sx + (a - dx) < 0) a = dx - sx;
+    if (sx + (b - dx) > src->w) b = dx - sx + src->w;
+    if (sy + (c - dy) < 0) c = dy - sy;
+    if (sy + (e - dy) > src->h) e = dy - sy + src->h;
+    text_copy(dst, a, c, b - a, e - c, src, sx + (a - dx), sy + (c - dy));
   }
   for (int y = y0; y < y1; y++) {
     int syy = sy + (int)((int64_t)(y - dy) * shh / h);
@@ -469,6 +483,7 @@ typedef struct {
   char path[256];
   char family[64];
   unsigned char *data;
+  int size;
   stbtt_fontinfo info;
 } FontFile;
 
@@ -489,7 +504,7 @@ static int load_font_file(const char *dospath) {
   fseek(f, 0, SEEK_SET);
   FontFile *ff = &g_fonts[g_nfonts];
   ff->data = malloc(n);
-  fread(ff->data, 1, n, f);
+  ff->size = (int)fread(ff->data, 1, n, f);
   fclose(f);
   if (!stbtt_InitFont(&ff->info, ff->data, stbtt_GetFontOffsetForIndex(ff->data, 0))) {
     free(ff->data);
@@ -647,6 +662,171 @@ static void put_pixel(Dib *d, const int32_t *clip, int x, int y, uint32_t c16, u
   else if (d->bpp == 8) row[x] = c8;
 }
 
+// ------------------------------------------------------------------ text for the HD layer
+//
+// hd.c redraws the game's text at the display's resolution. Every TextOut into
+// a 16-bit DIB leaves a record: the glyphs and where they went, plus each pixel
+// it set and the value that pixel had before. Unscaled same-format blits carry
+// the records along with the pixels (that's how text on golf's back buffer
+// reaches the window), and a record only counts while every pixel it set still
+// holds the text colour, so anything drawn over the text, or a surface that has
+// been redrawn, drops it. Copies jgld makes itself (its own blitters) don't
+// carry records, so that text stays as the game drew it.
+
+typedef struct {
+  Dib *dib;
+  int x0, y0, x1, y1;           // bounds of the pixels set
+  int npix;
+  int32_t *pos;                 // y * 65536 + x
+  uint16_t *under;              // pixel values before the text
+  uint16_t *snap;               // the bounds as they looked after the text
+  uint16_t c16;                 // the text colour as stored in the DIB
+  uint32_t rgb;                 // COLORREF
+  int file, bold, underline, uw0, uw1, ubase;
+  float em;
+  int32_t clip[4];
+  int nglyph;
+  float *glyph;                 // (char, x, baseline) per glyph
+} TextRec;
+
+#define TEXT_MAX 1024
+static TextRec **g_text;  // TEXT_MAX entries, allocated on first use (see hd.c on static data)
+static int g_ntext;
+
+static void text_free(int i) {
+  TextRec *r = g_text[i];
+  free(r->pos);
+  free(r->under);
+  free(r->snap);
+  free(r->glyph);
+  free(r);
+  // Keep drawing order: overlapping text is put back newest first.
+  memmove(g_text + i, g_text + i + 1, (size_t)(--g_ntext - i) * sizeof *g_text);
+}
+
+// Whether nothing has been drawn over the text since: its whole bounding box
+// still looks as it did (an aim line through a label, a sprite over it).
+static int text_intact(TextRec *r) {
+  int w = r->x1 - r->x0;
+  for (int y = r->y0; y < r->y1; y++)
+    if (memcmp((uint16_t *)row_ptr(r->dib, y) + r->x0, r->snap + (y - r->y0) * w, w * 2)) return 0;
+  return 1;
+}
+
+// After text `r` went on: snapshot its bounds, and let the older text it
+// overlaps (shadows under labels) know those pixels changed legitimately.
+static void text_snapshot(TextRec *r) {
+  int w = r->x1 - r->x0;
+  r->snap = malloc((size_t)w * (r->y1 - r->y0) * 2);
+  for (int y = r->y0; y < r->y1; y++) memcpy(r->snap + (y - r->y0) * w, (uint16_t *)row_ptr(r->dib, y) + r->x0, w * 2);
+  for (int i = 0; i < g_ntext; i++) {
+    TextRec *o = g_text[i];
+    if (o == r || o->dib != r->dib || o->x0 >= r->x1 || r->x0 >= o->x1 || o->y0 >= r->y1 || r->y0 >= o->y1) continue;
+    int ow = o->x1 - o->x0;
+    for (int k = 0; k < r->npix; k++) {
+      int x = r->pos[k] & 0xffff, y = r->pos[k] >> 16;
+      if (x >= o->x0 && x < o->x1 && y >= o->y0 && y < o->y1) o->snap[(y - o->y0) * ow + (x - o->x0)] = r->c16;
+    }
+  }
+}
+
+// Drops the records of `d` that no longer match its pixels.
+static void text_prune(Dib *d) {
+  for (int i = g_ntext - 1; i >= 0; i--)
+    if (g_text[i]->dib == d && !text_intact(g_text[i])) text_free(i);
+}
+
+static void text_add(TextRec *r) {
+  if (!g_text) g_text = malloc(TEXT_MAX * sizeof *g_text);
+  // The same text drawn again in the same place replaces the old record.
+  for (int i = g_ntext - 1; i >= 0; i--) {
+    TextRec *o = g_text[i];
+    if (o->dib == r->dib && o->x0 == r->x0 && o->y0 == r->y0 && o->x1 == r->x1 && o->y1 == r->y1) text_free(i);
+  }
+  if (g_ntext == TEXT_MAX) text_free(0);
+  g_text[g_ntext++] = r;
+}
+
+static void text_forget(Dib *d) {
+  for (int i = g_ntext - 1; i >= 0; i--)
+    if (g_text[i]->dib == d) text_free(i);
+}
+
+// After an unscaled copy of (sx, sy, w, h) in src to (dx, dy) in dst, already
+// clipped to both surfaces: the destination's records inside the rectangle are
+// gone, and the source's records wholly inside it come along.
+static void text_copy(Dib *dst, int dx, int dy, int w, int h, Dib *src, int sx, int sy) {
+  if (!g_ntext || dst->bpp != 16 || src->bpp != 16 || w <= 0 || h <= 0) return;
+  for (int i = g_ntext - 1; i >= 0; i--) {
+    TextRec *r = g_text[i];
+    if (r->dib == dst && r->x0 >= dx && r->y0 >= dy && r->x1 <= dx + w && r->y1 <= dy + h) text_free(i);
+  }
+  if (src == dst) return;
+  TextRec **copies = malloc(TEXT_MAX * sizeof *copies);
+  int ncopies = 0;
+  int ox = dx - sx, oy = dy - sy;
+  for (int i = 0; i < g_ntext; i++) {
+    TextRec *r = g_text[i];
+    if (r->dib != src || r->x0 < sx || r->y0 < sy || r->x1 > sx + w || r->y1 > sy + h) continue;
+    if (!text_intact(r)) continue;
+    TextRec *c = malloc(sizeof *c);
+    *c = *r;
+    c->dib = dst;
+    c->x0 += ox; c->x1 += ox; c->y0 += oy; c->y1 += oy;
+    c->clip[0] += ox; c->clip[2] += ox; c->clip[1] += oy; c->clip[3] += oy;
+    c->uw0 += ox; c->uw1 += ox; c->ubase += oy;
+    c->pos = malloc(r->npix * sizeof *c->pos);
+    c->under = malloc(r->npix * sizeof *c->under);
+    for (int k = 0; k < r->npix; k++) c->pos[k] = r->pos[k] + oy * 65536 + ox;
+    memcpy(c->under, r->under, r->npix * sizeof *c->under);
+    size_t area = (size_t)(r->x1 - r->x0) * (r->y1 - r->y0);
+    c->snap = malloc(area * 2);
+    memcpy(c->snap, r->snap, area * 2);
+    c->glyph = malloc(r->nglyph * 3 * sizeof(float));
+    for (int k = 0; k < r->nglyph; k++) {
+      c->glyph[k * 3] = r->glyph[k * 3];
+      c->glyph[k * 3 + 1] = r->glyph[k * 3 + 1] + ox;
+      c->glyph[k * 3 + 2] = r->glyph[k * 3 + 2] + oy;
+    }
+    copies[ncopies++] = c;
+  }
+  for (int i = 0; i < ncopies; i++) text_add(copies[i]);
+  free(copies);
+}
+
+// For hd.c. Copies the screen into `frame` with the text that still stands
+// erased (put back to what was under it), and lists that text in `out` as
+// [file, em, rgb, bold, underline, clip x0 y0 x1 y1, underline x0 x1 y, n,
+// (char, x, baseline) * n] per run, up to `cap` floats. Text in a font the
+// display can't draw yet (font_ready) stays in the frame. Returns the floats used.
+int gdi_hd_text(uint16_t *frame, float *out, int cap, int (*font_ready)(int file, const void *data, int size)) {
+  Dib *d = &g_screen_dib;
+  memcpy(frame, d->bits, (size_t)d->stride * d->h);
+  text_prune(d);
+  int used = 0;
+  // Later text was drawn over earlier text, so put the pixels back newest
+  // first; the runs go out in that order too (hd_web.js draws them reversed).
+  for (int i = g_ntext - 1; i >= 0; i--) {
+    TextRec *r = g_text[i];
+    if (r->dib != d) continue;
+    FontFile *ff = &g_fonts[r->file];
+    if (!font_ready(r->file, ff->data, ff->size)) continue;
+    int need = 13 + r->nglyph * 3;
+    if (used + need > cap) break;
+    for (int k = 0; k < r->npix; k++) {
+      int x = r->pos[k] & 0xffff, y = r->pos[k] >> 16;
+      frame[y * d->w + x] = r->under[k];
+    }
+    float *o = out + used;
+    o[0] = (float)r->file; o[1] = r->em; o[2] = (float)r->rgb; o[3] = (float)r->bold; o[4] = (float)r->underline;
+    for (int k = 0; k < 4; k++) o[5 + k] = (float)r->clip[k];
+    o[9] = (float)r->uw0; o[10] = (float)r->uw1; o[11] = (float)r->ubase; o[12] = (float)r->nglyph;
+    memcpy(o + 13, r->glyph, r->nglyph * 3 * sizeof(float));
+    used += need;
+  }
+  return used;
+}
+
 nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
   API_TRACE();
   Dc *dc = dc_get(hdc);
@@ -679,11 +859,60 @@ nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
   uint16_t c16 = to_dst16(d, c555);
   uint8_t c8 = d->bpp == 8 ? nearest_index(d, cr) : 0;
   const int32_t *clip = dc->has_clip ? dc->clip : NULL;
+  TextRec *rec = NULL;
+  if (d->bpp == 16 && n > 0) {
+    rec = calloc(1, sizeof *rec);
+    rec->dib = d;
+    rec->x0 = rec->y0 = 1 << 30;
+    rec->x1 = rec->y1 = -(1 << 30);
+    rec->c16 = c16;
+    rec->rgb = cr & 0xffffff;
+    rec->file = f->file;
+    rec->em = f->scale / stbtt_ScaleForMappingEmToPixels(info, 1);
+    rec->bold = f->bold;
+    rec->underline = f->underline;
+    rec->uw0 = px;
+    rec->uw1 = px + w;
+    rec->ubase = base + 1;
+    int32_t c[4] = {0, 0, d->w, d->h};
+    if (clip) for (int k = 0; k < 4; k++) c[k] = k < 2 ? (clip[k] > c[k] ? clip[k] : c[k]) : (clip[k] < c[k] ? clip[k] : c[k]);
+    memcpy(rec->clip, c, sizeof c);
+    rec->nglyph = (int)n;
+    rec->glyph = malloc(n * 3 * sizeof(float));
+  }
+  int cappix = 0;
+  // Sets one pixel, noting it (and what it was) in the record.
+#define TEXT_PIXEL(X, Y)                                                                      \
+  do {                                                                                        \
+    int X_ = (X), Y_ = (Y);                                                                   \
+    if (rec && X_ >= rec->clip[0] && Y_ >= rec->clip[1] && X_ < rec->clip[2] && Y_ < rec->clip[3]) { \
+      uint16_t *p_ = (uint16_t *)row_ptr(d, Y_) + X_;                                         \
+      if (rec->npix == cappix) {                                                              \
+        cappix = cappix ? cappix * 2 : 256;                                                   \
+        rec->pos = realloc(rec->pos, cappix * sizeof *rec->pos);                              \
+        rec->under = realloc(rec->under, cappix * sizeof *rec->under);                        \
+      }                                                                                       \
+      if (*p_ != c16) { /* already the colour: nothing to put back */                         \
+        rec->pos[rec->npix] = Y_ * 65536 + X_;                                                \
+        rec->under[rec->npix++] = *p_;                                                        \
+        if (X_ < rec->x0) rec->x0 = X_;                                                       \
+        if (Y_ < rec->y0) rec->y0 = Y_;                                                       \
+        if (X_ >= rec->x1) rec->x1 = X_ + 1;                                                  \
+        if (Y_ >= rec->y1) rec->y1 = Y_ + 1;                                                  \
+      }                                                                                       \
+    }                                                                                         \
+    put_pixel(d, clip, X_, Y_, c16, c8);                                                      \
+  } while (0)
   float fx = (float)px;
   for (int i = 0; i < (int)n; i++) {
     int ch = (unsigned char)s[i];
     int adv, lsb;
     stbtt_GetCodepointHMetrics(info, ch, &adv, &lsb);
+    if (rec) {
+      rec->glyph[i * 3] = (float)ch;
+      rec->glyph[i * 3 + 1] = fx;
+      rec->glyph[i * 3 + 2] = (float)base;
+    }
     int gw, gh, xoff, yoff;
     unsigned char *bmp = stbtt_GetCodepointBitmapSubpixel(info, f->scale, f->scale, fx - (int)fx, 0, ch,
                                                          &gw, &gh, &xoff, &yoff);
@@ -692,8 +921,8 @@ nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
         for (int xx = 0; xx < gw; xx++)
           if (bmp[yy * gw + xx] >= 128) {
             int ox = (int)fx + xoff + xx, oy = base + yoff + yy;
-            put_pixel(d, clip, ox, oy, c16, c8);
-            if (f->bold) put_pixel(d, clip, ox + 1, oy, c16, c8);
+            TEXT_PIXEL(ox, oy);
+            if (f->bold) TEXT_PIXEL(ox + 1, oy);
           }
       stbtt_FreeBitmap(bmp, NULL);
     }
@@ -701,7 +930,17 @@ nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
     if (i + 1 < (int)n) fx += stbtt_GetCodepointKernAdvance(info, ch, (unsigned char)s[i + 1]) * f->scale;
   }
   if (f->underline)
-    for (int xx = px; xx < px + w; xx++) put_pixel(d, clip, xx, base + 1, c16, c8);
+    for (int xx = px; xx < px + w; xx++) TEXT_PIXEL(xx, base + 1);
+#undef TEXT_PIXEL
+  if (rec) {
+    if (rec->npix) {
+      text_add(rec);
+      text_snapshot(rec);
+    } else {
+      free(rec->glyph);
+      free(rec);
+    }
+  }
   if (dc->is_window) win_present();
   return 1;
 }
