@@ -81,6 +81,9 @@
   .warn, #unsupported { display: none; margin: 0 0 18px; padding: 12px 20px; border-radius: 28px; font-weight: 700;
     background: #ffe3dc; color: #7a1a12; border: 3px solid #b3261e; box-shadow: 0 4px 0 rgba(122,26,18,.3); }
 
+  .count { display: none; width: max-content; max-width: 100%; margin: -12px auto 22px; padding: 6px 16px; border-radius: 30px;
+    font-weight: 800; font-size: 15px; color: var(--violet-deep); background: rgba(255,255,255,.55); border: 2px solid rgba(36,16,120,.25); }
+  .count b { color: var(--green); font: 800 18px/1 "Baloo 2", sans-serif; }
   .coffee { display: flex; align-items: center; justify-content: center; gap: 10px; width: max-content; max-width: 100%; margin: 26px auto 0; padding: 10px 22px 10px 12px; border-radius: 40px;
     text-decoration: none; color: #fff; font: 800 18px/1.1 "Baloo 2", sans-serif; background: linear-gradient(#a0521f, var(--wood) 60%, var(--wood-dark));
     border: 3px solid #3a1806; box-shadow: 0 0 0 2px rgba(255,255,255,.35) inset, 0 5px 0 rgba(58,24,6,.35); transition: transform .12s; }
@@ -118,6 +121,7 @@
       <h1>SimGolf</h1>
     </div>
     <p class="tag">The 2002 classic, running in your browser. You bring the game files; nothing is uploaded anywhere.</p>
+    <div class="count" id="count">⛳ <b id="count-n"></b> rounds teed off in the browser so far</div>
     <div id="mobile" style="display:none" class="warn">SimGolf needs a mouse and a big screen, so it doesn't work on phones or tablets. Open this page on a desktop or laptop.</div>
     <div id="unsupported">This browser can't run the game yet. Use a recent <strong>Chrome</strong> or <strong>Edge</strong> (version 137 or newer) on a desktop or laptop.</div>
     <ol class="steps">
@@ -142,6 +146,24 @@
 
 <script>
   var Module = { canvas: document.getElementById('canvas'), noVideos: false, quiet: true };
+
+  // Play counter: one anonymous hit each time the game starts in a tab
+  // (Abacus: a public counter service, no cookies or identifiers); the setup
+  // page shows the total.
+  (function () {
+    var C = 'https://abacus.jasoncameron.dev';
+    var KEY = '/simgolf-web/rounds';
+    var show = function (j) {
+      if (!j || typeof j.value !== 'number' || j.value < 1) return;
+      document.getElementById('count-n').textContent = j.value.toLocaleString();
+      document.getElementById('count').style.display = 'block';
+    };
+    fetch(C + '/get' + KEY).then(function (r) { return r.ok ? r.json() : null; }).then(show).catch(function () {});
+    Module.postRun = (Module.postRun || []).concat(function () {
+      try { if (sessionStorage.getItem('simgolf-counted')) return; sessionStorage.setItem('simgolf-counted', '1'); } catch (e) {}
+      fetch(C + '/hit' + KEY).catch(function () {});
+    });
+  })();
 
   // "Start over" in the Saves panel (Ctrl+F8): forget the unpacked game files
   // (saves are kept) and go back to the setup screen.
