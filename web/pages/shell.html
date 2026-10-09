@@ -95,6 +95,13 @@
   .count { display: none; width: max-content; max-width: 100%; margin: -12px auto 22px; padding: 6px 16px; border-radius: 30px;
     font-weight: 800; font-size: 15px; color: var(--violet-deep); background: rgba(255,255,255,.55); border: 2px solid rgba(36,16,120,.25); }
   .count b { color: var(--green); font: 800 18px/1 "Baloo 2", sans-serif; }
+  .quote { position: relative; max-width: 560px; margin: 30px auto 0; padding: 16px 22px 14px 58px; border-radius: 24px; color: var(--ink);
+    background: rgba(255,255,255,.7); border: 3px solid var(--violet-deep); box-shadow: 0 4px 0 rgba(36,16,120,.3); }
+  .quote::before { content: "\201C"; position: absolute; left: 14px; top: 2px; font: 800 64px/1 "Baloo 2", sans-serif; color: var(--violet); }
+  .quote::after { content: ""; position: absolute; left: 44px; bottom: -14px; width: 22px; height: 22px; background: inherit;
+    border-right: 3px solid var(--violet-deep); border-bottom: 3px solid var(--violet-deep); transform: rotate(45deg); background: #f3f1fb; }
+  .quote p { margin: 0 0 6px; font-weight: 700; font-style: italic; }
+  .quote cite { font-style: normal; font-size: 13px; font-weight: 800; color: var(--violet); }
   .coffee { display: flex; align-items: center; justify-content: center; gap: 10px; width: max-content; max-width: 100%; margin: 26px auto 0; padding: 10px 22px 10px 12px; border-radius: 40px;
     text-decoration: none; color: #fff; font: 800 18px/1.1 "Baloo 2", sans-serif; background: linear-gradient(#a0521f, var(--wood) 60%, var(--wood-dark));
     border: 3px solid #3a1806; box-shadow: 0 0 0 2px rgba(255,255,255,.35) inset, 0 5px 0 rgba(58,24,6,.35); transition: transform .12s; }
@@ -167,6 +174,10 @@
     <div id="bar"><div></div></div>
     <div id="msg" role="status"></div>
     </div>
+    <blockquote class="quote">
+      <p>If humankind's AIpocalypse comes to pass and we're eradicated by the products [of] our own ingenuity, it will have been worth it because of this and this, alone.</p>
+      <cite>u/Sisyphicarus, on Reddit</cite>
+    </blockquote>
     <a class="coffee" href="https://donate.stripe.com/eVq6oG1U46TL3ut28h9R600" target="_blank" rel="noopener"><span class="cup" aria-hidden="true">☕</span><span>Buy me a coffee<small>Enjoying SimGolf again? Chip in to keep the port going.</small></span></a>
     <div class="wood">
       <p>Saves stay in this browser: press <strong>Ctrl+F8</strong> in the game to download or import them, report a problem, or start over with different game files.</p>
