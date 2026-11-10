@@ -198,6 +198,7 @@ static inline double U2D(uint32_t lo, uint32_t hi) {
 
 void port_halt(const char *fn, const char *why);
 int port_screen_w(void);  // win32.c: 800, or wider with ?wide
+int port_wide_center(void);  // gdi.c: how far a screen-centred dialog moves right
 extern int port_tee_placed;  // golf/overrides.c: set by the tee branch of FUN_0040f5c0, see golf.json
 
 void port_ret_log(uint32_t fn, int where, uint32_t value);

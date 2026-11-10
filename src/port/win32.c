@@ -33,12 +33,14 @@ static nu g_last_error;
 
 EM_JS(int, js_api_trace_enabled, (void), { return Module.apiTrace ? 1 : 0; });
 
-// Frame width for ?wide (docs/widescreen.md): ?wide or ?wide=16:9 -> 1066,
+// Frame width (docs/widescreen.md), from the URL or the Widescreen setting
+// (localStorage simgolf-wide): ?wide or ?wide=16:9 -> 1066,
 // ?wide=16:10 -> 960, ?wide=auto follows the window's shape, ?wide=<width>.
 // Even widths only, 800..1280, fixed for the session.
 EM_JS(int, js_screen_w, (void), {
   var m = /[?&]wide(?:=([^&]*))?/.exec(location.search);
   var v = m ? decodeURIComponent(m[1] || '16:9') : (Module.wide || '');
+  if (!m && !v) { try { v = localStorage.getItem('simgolf-wide') || ''; } catch (e) {} }
   if (!v || v === '0' || v === 'off') return 800;
   var w;
   if (v === 'auto') w = 600 * innerWidth / Math.max(1, innerHeight);

@@ -59,8 +59,9 @@ Mods
 Unzip a mod into the mods folder in the app data folder above, one folder
 per mod. Theme packs then show up under Select A Theme on the main menu.
 
-Settings (screen width for widescreen, edge scrolling, scaling,
-high-resolution drawing) are in settings.ini in the app data folder.
+Settings (edge scrolling, scaling, high-resolution drawing) are in
+settings.ini in the app data folder. For widescreen, set screen_width=1066
+there (800 is the original 4:3 view).
 
 SimGolf is (c) Firaxis Games / Electronic Arts. This port is an unofficial
 fan project: https://github.com/RichardAtCT/simgolf-web

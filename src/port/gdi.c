@@ -183,6 +183,10 @@ static int g_narrow;
 
 int gdi_wide_dx(void) { return g_narrow ? (WIN_SCREEN_W - 800) / 2 : 0; }
 
+// How far a dialog centred on 400 has to move to sit in the middle of the frame.
+// Zero on the 4:3 screens, which are already drawn in a centred 800-wide view.
+int port_wide_center(void) { return g_narrow ? 0 : (WIN_SCREEN_W - 800) / 2; }
+
 static WideSurf *wide_find(Dib *d) {
   for (int i = 0; i < g_nwide; i++)
     if (g_wide[i].d == d) return &g_wide[i];

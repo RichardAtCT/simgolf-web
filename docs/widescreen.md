@@ -1,7 +1,12 @@
-# Widescreen (`?wide`)
+# Widescreen
 
-The game draws an 800x600 frame. With `?wide` in the URL the frame is wider and
-the course view fills it; everything laid out for 4:3 stays 4:3, centred.
+The game draws an 800x600 frame. In widescreen the frame is wider and the course
+view fills it; everything laid out for 4:3 stays 4:3, centred. It is off by default.
+
+- **Browser:** the Widescreen checkbox under Settings in the Saves panel (Ctrl+F8),
+  stored in localStorage `simgolf-wide` and read at page load, or the URL options below,
+  which win over the setting.
+- **Desktop:** `screen_width` in settings.ini (1066 for 16:9).
 
 | URL | Frame |
 |---|---|
@@ -34,14 +39,19 @@ course to the sides. Off by default; without `?wide` nothing changes.
   with black bars beside it. A copy to or from golf's terrain cache (`*(0x4c1574)`)
   switches back to full width. golf's top-level windows cache a visible rect
   (`+0x1dc`) that is updated on each switch too.
+- **Course HUD** (`golf.json`, `FUN_0040f5c0`): the money, golfer and rating counters are
+  drawn at `width - 800 + x`, so they stay in the top-right corner, and the Paused/Fast
+  caption is centred on the frame.
+- **Dialogs**: `port_wide_center()` (`gdi.c`) is how far a dialog centred on 400 moves right;
+  it is 0 on the 4:3 screens. The list dialog `FUN_0046d6e0` uses it when its x is 400, so
+  menus anchored to the left-hand buttons stay put. The text prompt `FUN_0045b2c0` and the
+  Save Game panels (`FUN_00405b10`, `FUN_0046f550`) always use it.
 - **Page**: the canvas takes its aspect ratio from `--ar`, set by `gdi_init`; the HD
   presentation follows the SDL canvas size.
 
 ## Known gaps
 
-- The course HUD keeps its 4:3 positions: the money, golfer and rating counters sit at
-  x 650..790, not at the right edge. Moving them means patching their draw and
-  hit-test coordinates in `FUN_00456be0` and friends.
-- Dialogs that pop up over the course view without a full-screen background are drawn
-  in the left 800 pixels rather than centred.
+- The bottom toolbar keeps its 4:3 position on the left.
+- Dialogs not listed above that place themselves with fixed coordinates stay where
+  they are; only Preferences, Rename Course and Save Game were checked by eye.
 - Untested: the 2D zoom mode (`DAT_005a9cc0`), whose code still centres on 400,300.

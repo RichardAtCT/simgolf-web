@@ -56,6 +56,38 @@
   },
   "skip": [],
   "patches": {
+    "FUN_0046d6e0": [
+          [
+                "  uVar18 = 0;\n  iVar15 = 0;\n  iVar16 = 0;\n  local_48 = 0;",
+                "  if (param_1 == 400) param_1 += port_wide_center();\n  uVar18 = 0;\n  iVar15 = 0;\n  iVar16 = 0;\n  local_48 = 0;"
+          ]
+    ],
+    "FUN_0045b2c0": [
+          [
+                "  iVar3 = param_4 * 0xc;\n  local_128 = uVar6;",
+                "  param_2 += port_wide_center();\n  iVar3 = param_4 * 0xc;\n  local_128 = uVar6;"
+          ]
+    ],
+    "FUN_00405b10": [
+          [
+                "FUN_0040cc00(0x36,0x50,0x274,0x50);",
+                "FUN_0040cc00(port_wide_center() + 0x36,0x50,0x274,0x50);"
+          ],
+          [
+                "FUN_00404bc0(s_SAVE_GAME__edit_name_then_press_E_004c3f74,0x180,0x58,0x80007fff);",
+                "FUN_00404bc0(s_SAVE_GAME__edit_name_then_press_E_004c3f74,port_wide_center() + 0x180,0x58,0x80007fff);"
+          ]
+    ],
+    "FUN_0046f550": [
+          [
+                "FUN_0040cc00(0x78,0x50,0x210,0x50);",
+                "FUN_0040cc00(port_wide_center() + 0x78,0x50,0x210,0x50);"
+          ],
+          [
+                "FUN_00404bc0(s_SAVE_GAME__edit_name_then_press_E_004c3f74,0x180,0x58,0x80007fff);",
+                "FUN_00404bc0(s_SAVE_GAME__edit_name_then_press_E_004c3f74,port_wide_center() + 0x180,0x58,0x80007fff);"
+          ]
+    ],
     "FUN_0044a6e0": [
       [
         "if (DAT_00820f30 == 800) {",
@@ -108,6 +140,46 @@
       [
         "LAB_00420a9f:\n  FUN_0042f2c0();",
         "LAB_00420a9f:\n  if (port_tee_placed) { port_tee_placed = 0; DAT_004c2848 = 1; }\n  FUN_0042f2c0();"
+      ],
+      [
+        "FUN_00421b90(&DAT_005205bc,(int)PTR_DAT_004c1570,0x289,0xd,",
+        "FUN_00421b90(&DAT_005205bc,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 0x289),0xd,"
+      ],
+      [
+        "FUN_00473f60(&DAT_00542f54,0x59ab2c,(int)PTR_DAT_004c1570,0x289,0xd,0);",
+        "FUN_00473f60(&DAT_00542f54,0x59ab2c,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 0x289),0xd,0);"
+      ],
+      [
+        "FUN_00404bc0((char *)&DAT_0051a068,0x2c4,0x23,uVar48);",
+        "FUN_00404bc0((char *)&DAT_0051a068,(DAT_00822c8c - 800 + 0x2c4),0x23,uVar48);"
+      ],
+      [
+        "FUN_00421b90(&DAT_005205e8,(int)PTR_DAT_004c1570,0x2a5,0x37,",
+        "FUN_00421b90(&DAT_005205e8,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 0x2a5),0x37,"
+      ],
+      [
+        "FUN_00473f60(&DAT_00542f80,0x59ab58,(int)PTR_DAT_004c1570,0x2a5,0x37,0);",
+        "FUN_00473f60(&DAT_00542f80,0x59ab58,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 0x2a5),0x37,0);"
+      ],
+      [
+        "FUN_00404bc0((char *)&DAT_0051a068,0x2d2,0x4e,0x80007ff0);",
+        "FUN_00404bc0((char *)&DAT_0051a068,(DAT_00822c8c - 800 + 0x2d2),0x4e,0x80007ff0);"
+      ],
+      [
+        "FUN_00421b90(&DAT_00520614,(int)PTR_DAT_004c1570,699,99,",
+        "FUN_00421b90(&DAT_00520614,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 699),99,"
+      ],
+      [
+        "FUN_00473f60(&DAT_00542fac,0x59ab84,(int)PTR_DAT_004c1570,699,99,0);",
+        "FUN_00473f60(&DAT_00542fac,0x59ab84,(int)PTR_DAT_004c1570,(DAT_00822c8c - 800 + 699),99,0);"
+      ],
+      [
+        "FUN_00404bc0((char *)&DAT_0051a068,0x2dc,0x79,0x800003ff);",
+        "FUN_00404bc0((char *)&DAT_0051a068,(DAT_00822c8c - 800 + 0x2dc),0x79,0x800003ff);"
+      ],
+      [
+        "FUN_00404bc0((char *)&DAT_0051a068,400,10,0x80007fff);",
+        "FUN_00404bc0((char *)&DAT_0051a068,DAT_00822c8c / 2,10,0x80007fff);"
       ]
     ],
     "FUN_00470a60": [

@@ -294,7 +294,9 @@
       });
       h += '<p id="sv-msg">' + esc(msg) + '</p>';
       h += '<h3>Settings</h3><label class="row"><input type="checkbox" id="sv-edge"' +
-        (edgeScrollOn() ? ' checked' : '') + '> Scroll the course when the pointer touches a screen edge</label>';
+        (edgeScrollOn() ? ' checked' : '') + '> Scroll the course when the pointer touches a screen edge</label>' +
+        '<label class="row"><input type="checkbox" id="sv-wide"' + (wideOn() ? ' checked' : '') +
+        '> Widescreen: show more of the course on a 16:9 screen (applies when the page next loads)</label>';
       if (modList) h += modsHtml(modList);
       if (Module.savePanelFooter) h += Module.savePanelFooter;   // extra controls from the page
       h += keysHtml();
@@ -366,6 +368,9 @@
       function (e) { modSay(String(e && e.message || e)); });
   }
 
+  function wideOn() {
+    try { return !/^(|0|off)$/.test(localStorage.getItem('simgolf-wide') || ''); } catch (e) { return false; }
+  }
   function edgeScrollOn() {
     if (Module.edgeScroll !== undefined) return Module.edgeScroll;
     try { return localStorage.getItem('simgolf-edge-scroll') !== '0'; } catch (e) { return true; }
@@ -374,6 +379,10 @@
   panel.addEventListener('change', function (e) {
     var mod = e.target.getAttribute && e.target.getAttribute('data-mod');
     if (mod) { window.simgolfMods.setOn(mod, e.target.checked).then(function () { modSay(''); }); return; }
+    if (e.target.id === 'sv-wide') {
+      try { localStorage.setItem('simgolf-wide', e.target.checked ? '16:9' : 'off'); } catch (err) {}
+      return;
+    }
     if (e.target.id !== 'sv-edge') return;
     Module.edgeScroll = e.target.checked;
     try { localStorage.setItem('simgolf-edge-scroll', e.target.checked ? '1' : '0'); } catch (err) {}
