@@ -149,6 +149,32 @@
         "iVar4 = FUN_00467130(local_20,0,9);",
         "iVar4 = FUN_00467130(uVar3 != 0 ? local_20 : 5,0,9);"
       ]
+    ],
+    "FUN_00431fa0": [
+      [
+        "crt_fprintf(iVar4,0x4c78e0);",
+        "crt_fprintf(iVar4,0x4c78e0,*(char **)(0x4c3078 + (*(unsigned char *)0x5a34e0 & 3) * 4));"
+      ],
+      [
+        "crt_fprintf(iVar4,0x4c7894);",
+        "crt_fprintf(iVar4,0x4c7894,*(int *)0x59ae78);"
+      ]
+    ],
+    "FUN_00463180": [
+      [
+        "param_4 + (local_40 + -0x1c) * 5,fVar16,(int)puVar17,1);",
+        "param_4 + (local_40 + -0x1c) * 5,F2I(fVar16),(int)puVar17,1);"
+      ],
+      [
+        "param_4 + (local_40 + -0x30) * 5,(float)param_2 * 0.05,",
+        "param_4 + (local_40 + -0x30) * 5,F2I((float)param_2 * 0.05),"
+      ]
+    ],
+    "FUN_00430360": [
+      [
+        "(float)local_1c * 0.04 + 0.2,",
+        "F2I((float)local_1c * 0.04 + 0.2),"
+      ]
     ]
   },
   "class_libs": [
