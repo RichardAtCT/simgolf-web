@@ -100,6 +100,14 @@
       [
         "if (0x31e < iStack_103c) {",
         "if (port_screen_w() - 2 < iStack_103c) {"
+      ],
+      [
+        "(&DAT_0053caf0)[iStack_122c + iStack_1234 * 0x32] = uVar3;\n      if ((uVar24 & 0x40) == 0) {",
+        "(&DAT_0053caf0)[iStack_122c + iStack_1234 * 0x32] = uVar3;\n      port_tee_placed = 1;\n      if ((uVar24 & 0x40) == 0) {"
+      ],
+      [
+        "LAB_00420a9f:\n  FUN_0042f2c0();",
+        "LAB_00420a9f:\n  if (port_tee_placed) { port_tee_placed = 0; DAT_004c2848 = 1; }\n  FUN_0042f2c0();"
       ]
     ],
     "FUN_00470a60": [
@@ -134,6 +142,12 @@
       [
         "(*(code *)**(undefined4 **)(*(int *)(*DAT_0083ac90 + 4) + (int)DAT_0083ac90))(1);",
         "this = (undefined4 *)(*(int *)(*DAT_0083ac90 + 4) + (int)DAT_0083ac90);\n          (**(code **)*this)(this,1);"
+      ]
+    ],
+    "FUN_004038f0": [
+      [
+        "iVar4 = FUN_00467130(local_20,0,9);",
+        "iVar4 = FUN_00467130(uVar3 != 0 ? local_20 : 5,0,9);"
       ]
     ]
   },

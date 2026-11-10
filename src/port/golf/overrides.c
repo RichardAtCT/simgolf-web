@@ -5,6 +5,10 @@
 #include "golf_protos.h"
 #include "port/runtime.h"
 
+// Issue #13: FUN_0040f5c0 sets this when a tee goes down and, once the tile
+// work for that click is done, moves the tool on to the green.
+int port_tee_placed;
+
 // @override FUN_004ae020
 // Writes a JPEG snapshot with the statically linked IJG libjpeg 6b
 // (jpeg_CreateCompress etc. at 0x4ae020-0x4b6400). Not ported yet: report
