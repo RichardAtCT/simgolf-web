@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #include <SDL.h>
 #include <emscripten.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1040,13 +1041,17 @@ nu TextOutA(nu hdc, nu x, nu y, nu str, nu n) {
       rec->glyph[i * 3 + 2] = (float)base;
     }
     int gw, gh, xoff, yoff;
-    unsigned char *bmp = stbtt_GetCodepointBitmapSubpixel(info, f->scale, f->scale, fx - (int)fx, 0, ch,
-                                                         &gw, &gh, &xoff, &yoff);
+    // Whole-pixel pen positions and a lower coverage cut, like GDI's hinted
+    // monochrome text: a fractional pen position cuts each glyph differently
+    // every time it appears, and >=50% coverage drops thin strokes, which is
+    // what garbled this text whenever the HD overlay isn't redrawing it.
+    int pen = (int)floorf(fx + 0.5f);
+    unsigned char *bmp = stbtt_GetCodepointBitmap(info, f->scale, f->scale, ch, &gw, &gh, &xoff, &yoff);
     if (bmp) {
       for (int yy = 0; yy < gh; yy++)
         for (int xx = 0; xx < gw; xx++)
-          if (bmp[yy * gw + xx] >= 128) {
-            int ox = (int)fx + xoff + xx, oy = base + yoff + yy;
+          if (bmp[yy * gw + xx] >= 96) {
+            int ox = pen + xoff + xx, oy = base + yoff + yy;
             TEXT_PIXEL(ox, oy);
             if (f->bold) TEXT_PIXEL(ox + 1, oy);
           }
